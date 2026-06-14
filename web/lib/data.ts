@@ -2,6 +2,9 @@
 import type { Meta, PoolPlayer } from "@/lib/types";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+// Cache-buster: changes every deploy so returning visitors never get stale data
+// from a force-cached older build (the data files keep the same filename).
+export const DATA_VERSION = process.env.NEXT_PUBLIC_DATA_VERSION || "dev";
 
 export interface LadderRow {
   team: string; abbr?: string; league?: number; division?: string;
@@ -36,7 +39,7 @@ export interface Results {
 const cache = new Map<string, unknown>();
 async function loadJson<T>(file: string): Promise<T> {
   if (cache.has(file)) return cache.get(file) as T;
-  const res = await fetch(`${BASE}/data/${file}`, { cache: "force-cache" });
+  const res = await fetch(`${BASE}/data/${file}?v=${DATA_VERSION}`, { cache: "force-cache" });
   const data = (await res.json()) as T;
   cache.set(file, data);
   return data;

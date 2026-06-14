@@ -30,6 +30,9 @@ jobs:
         env:
           NEXT_PUBLIC_SITE_URL: https://mlb162-0.com
           NEXT_PUBLIC_LEADERBOARD_URL: ${{ vars.LEADERBOARD_URL }}
+          # Cache-buster for the /data/*.json files — changes every deploy so
+          # returning visitors never get stale force-cached data.
+          NEXT_PUBLIC_DATA_VERSION: ${{ github.sha }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
