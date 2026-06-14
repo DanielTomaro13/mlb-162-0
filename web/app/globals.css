@@ -37,6 +37,13 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   overflow-x: hidden;
+  /* Disable iOS Safari double-tap-to-zoom (and its 350ms click delay) for the
+     whole document. `manipulation` still permits panning AND pinch-to-zoom, so
+     accessibility zoom is untouched — we deliberately never set maximum-scale.
+     Root cause of the "Spin button zooms the page" bug: mid-spin the button is
+     disabled, so a quick second tap falls through to a plain ancestor <div>
+     (card / grid) that had touch-action:auto and double-tap-zoomed. */
+  touch-action: manipulation;
 }
 
 body {
@@ -227,4 +234,16 @@ table.stat tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+/* Grid/flex blowout guard. A grid track's automatic minimum is min-content, so
+   a single non-shrinkable descendant (e.g. the diamond field / roster sheet in
+   the Perfect Season layout) can force a collapsed `1fr` column wider than the
+   phone viewport — the overflow then gets clipped by body{overflow-x:hidden},
+   cutting off the right edge of the board on iOS. Forcing min-width:0 on grid
+   items lets the track actually shrink to the viewport. */
+.ps-grid > *,
+.play-boards > *,
+.grid-cards > * {
+  min-width: 0;
 }

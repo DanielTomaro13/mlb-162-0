@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { serverMeta, serverResults } from "@/lib/serverdata";
-import { allPlayers } from "@/lib/playerdb";
 import LiveLeaders from "@/components/LiveLeaders";
 import LiveStandingsPreview from "@/components/LiveStandingsPreview";
-import TopPlayersLeaderboard from "@/components/TopPlayersLeaderboard";
 import HomeLeaderboard from "@/components/HomeLeaderboard";
 import DailyLeaderboard from "@/components/DailyLeaderboard";
 import { GAMES } from "@/lib/gamelist";
@@ -11,7 +9,6 @@ import { GAMES } from "@/lib/gamelist";
 export default function Home() {
   const meta = serverMeta();
   const results = serverResults();
-  const topPlayers = [...allPlayers()].sort((a, b) => b.rating - a.rating || b.fame - a.fame).slice(0, 80);
   const liveRows = results.laddersBySeason[meta.liveSeason] ?? [];
 
   return (
@@ -28,9 +25,9 @@ export default function Home() {
         </p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link href="/play?daily=1" className="btn btn-primary">⚾ Daily Challenge</Link>
-          <Link href="/play" className="btn">🎲 Free draft — spin &amp; build</Link>
+          <Link href="/play" className="btn">🎲 Spin &amp; Build</Link>
           <Link href="/games" className="btn">Mini-games</Link>
-          <Link href="/perfect" className="btn">162-0 Tracker</Link>
+          <Link href="/leaderboard" className="btn">Hall of Fame</Link>
         </div>
       </section>
 
@@ -77,14 +74,6 @@ export default function Home() {
       {/* current-season player stat leaders */}
       <LiveLeaders data={results.liveLeaders} />
 
-      {/* all-time players leaderboard */}
-      <section>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-          <h2 style={{ margin: 0 }}>All-time player leaderboard</h2>
-          <Link href="/perfect" style={{ fontSize: ".85rem", color: "var(--accent)" }}>Full 162-0 leaderboard →</Link>
-        </div>
-        <TopPlayersLeaderboard players={topPlayers} limit={10} />
-      </section>
 
       {/* live standings — the real thing, clearly labelled, moved to the foot */}
       <LiveStandingsPreview rows={liveRows} season={meta.liveSeason} />

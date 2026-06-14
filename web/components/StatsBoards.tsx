@@ -46,7 +46,7 @@ export default function StatsBoards({ players }: { players: ProfilePlayer[] }) {
           </button>
         ))}
         <select value={team} onChange={(e) => setTeam(e.target.value)}
-          style={{ marginLeft: "auto", padding: ".4rem .6rem", borderRadius: 999, border: "1px solid var(--border)", background: "var(--panel-2)", color: "var(--text)", fontSize: ".8rem" }}>
+          style={{ marginLeft: "auto", padding: ".4rem .6rem", borderRadius: 999, border: "1px solid var(--border)", background: "var(--panel-2)", color: "var(--text)", fontSize: 16 }}>
           {teams.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>

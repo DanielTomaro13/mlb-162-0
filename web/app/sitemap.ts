@@ -17,7 +17,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const top: MetadataRoute.Sitemap = [
     { url: `${SITE.url}/`, priority: 1, changeFrequency: "daily", lastModified: now },
     { url: `${SITE.url}/play/`, priority: 0.9, changeFrequency: "weekly", lastModified: now },
-    { url: `${SITE.url}/perfect/`, priority: 0.9, changeFrequency: "daily", lastModified: now },
     { url: `${SITE.url}/games/`, priority: 0.8, changeFrequency: "weekly", lastModified: now },
     { url: `${SITE.url}/standings/`, priority: 0.8, changeFrequency: "daily", lastModified: now },
     { url: `${SITE.url}/teams/`, priority: 0.8, changeFrequency: "weekly", lastModified: now },

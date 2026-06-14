@@ -232,10 +232,14 @@ export default function PerfectSeasonGame() {
   function spinFresh() {
     if (daily || !pool || spinningRef.current || done) return;
     if (decades) {
-      // Spin a franchise + a decade deep enough to fill The Roster (13).
+      // Spin a franchise + a decade deep enough to fill The Roster (13). Pick a
+      // random DECADE first (uniform across every era, 1900s→2020s) then a team
+      // in it, so old decades show up just as often as recent ones.
       const pairs = decadePairs();
       if (!pairs.length) return;
-      const pick = rnd(pairs);
+      const decs = [...new Set(pairs.map((p) => p.dec))];
+      const dec = rnd(decs);
+      const pick = rnd(pairs.filter((p) => p.dec === dec));
       animateTo({ team: pick.team, era: decadeLabel(pick.dec) });
       return;
     }
@@ -387,7 +391,10 @@ export default function PerfectSeasonGame() {
     if (!daily || !pool || spinningRef.current || done) return;
     const draw = dailyDraw();
     if (!draw) return;
-    animateTo({ team: draw.team, era: draw.era }, { team: true, era: true });
+    // No lock: the reels flick through random teams/seasons (full spin animation
+    // + tick/settle sound) and LAND on the deterministic daily draw — everyone
+    // still gets the identical result, it's just revealed with a proper spin.
+    animateTo({ team: draw.team, era: draw.era });
   }
   function reset() {
     if (!mode) return;

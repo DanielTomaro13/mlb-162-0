@@ -38,8 +38,8 @@ export default function SiteFooter() {
           <nav style={{ display: "grid", gap: 6, fontSize: ".85rem" }}>
             <strong style={{ color: "var(--text)" }}>Play</strong>
             <Link href="/play">Perfect Season</Link>
+            <Link href="/play?daily=1">Daily Challenge</Link>
             <Link href="/games">Mini-games</Link>
-            <Link href="/perfect">162-0 Tracker</Link>
             <Link href="/leaderboard">Hall of Fame</Link>
           </nav>
           <nav style={{ display: "grid", gap: 6, fontSize: ".85rem" }}>

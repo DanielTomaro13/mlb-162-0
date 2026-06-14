@@ -2,8 +2,6 @@ name = "mlb1620-leaderboard"
 main = "src/index.ts"
 compatibility_date = "2026-06-01"
 
-# Create with: wrangler kv namespace create BOARD
-# then paste the id below.
 kv_namespaces = [
-  { binding = "BOARD", id = "REPLACE_WITH_KV_NAMESPACE_ID" }
+  { binding = "BOARD", id = "7c0ada46d62642c88cabd63330dbca5a" }
 ]
