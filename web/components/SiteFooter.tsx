@@ -22,6 +22,15 @@ export default function SiteFooter() {
             <a href="https://nrl24-0.com" style={{ color: "var(--accent)" }}>NRL 24-0</a> ·{" "}
             <a href="https://footballinvincibles.com" style={{ color: "var(--accent)" }}>Football Invincibles</a>
           </p>
+          <a
+            href="https://ko-fi.com/danieltomaro"
+            target="_blank"
+            rel="noopener"
+            className="btn"
+            style={{ marginTop: 12, width: "fit-content", borderColor: "#ff5e5b", color: "var(--text)" }}
+          >
+            ☕ Support on Ko-fi
+          </a>
         </div>
         <div style={{ display: "flex", gap: "2.5rem", marginLeft: "auto", flexWrap: "wrap" }}>
           <nav style={{ display: "grid", gap: 6, fontSize: ".85rem" }}>

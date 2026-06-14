@@ -55,6 +55,17 @@ export default function ContactPage() {
         </ul>
       </section>
 
+      <section className="card" style={{ padding: "1.25rem", display: "grid", gap: 8 }}>
+        <h2 style={{ fontSize: "1.2rem", margin: 0 }}>☕ Support the site</h2>
+        <p style={{ color: "var(--muted)", margin: 0, fontSize: ".9rem" }}>
+          {SITE.name} is free, ad-light and built by one person. If it&apos;s brightened a rain delay,
+          a tip on Ko-fi keeps the servers running and the data fresh — no pressure, hugely appreciated.
+        </p>
+        <a href="https://ko-fi.com/danieltomaro" target="_blank" rel="noopener" className="btn btn-primary" style={{ width: "fit-content" }}>
+          Buy me a coffee on Ko-fi →
+        </a>
+      </section>
+
       <p style={{ color: "var(--muted)", fontSize: ".88rem" }}>
         Want to know how the ratings and the 162-0 chase work first? See the{" "}
         <Link href="/about" style={{ color: "var(--accent)" }}>About &amp; method</Link> page.
