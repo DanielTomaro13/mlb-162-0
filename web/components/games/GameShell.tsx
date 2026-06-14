@@ -15,7 +15,7 @@ export default function GameShell({
     "@context": "https://schema.org",
     "@type": "VideoGame",
     name: `${title} — MLB 162-0`,
-    url: `${SITE.url}/games/${slug}`,
+    url: `${SITE.url}/games/${slug}/`,
     applicationCategory: "Game",
     operatingSystem: "Web",
     gamePlatform: "Web browser",

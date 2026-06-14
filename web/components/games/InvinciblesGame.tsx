@@ -70,6 +70,7 @@ export default function InvinciblesGame() {
     if (!pool || spinRef.current || complete) return;
     spinRef.current = true; setSpinning(true); setPosFilter("All");
     const teams = Array.from(new Set(pool.filter(undrafted).map((p) => p.team)));
+    if (!teams.length) { setSpinning(false); spinRef.current = false; return; }
     const team = rnd(teams);
     const eras = Array.from(new Set(pool.filter((p) => p.team === team && undrafted(p)).map(seasonOf)));
     const target = { team, era: eras.length ? rnd(eras) : null };

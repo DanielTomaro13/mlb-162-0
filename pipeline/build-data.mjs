@@ -100,6 +100,21 @@ function hitterElig(pos) {
   return [...e];
 }
 
+/* ---- team abbreviations (matches web/lib/teams.ts, handles renames) ------- */
+const ABBR = [
+  ["Diamondbacks", "ARI"], ["Braves", "ATL"], ["Orioles", "BAL"], ["Red Sox", "BOS"],
+  ["Cubs", "CHC"], ["White Sox", "CWS"], ["Reds", "CIN"], ["Guardians", "CLE"], ["Indians", "CLE"],
+  ["Rockies", "COL"], ["Tigers", "DET"], ["Astros", "HOU"], ["Royals", "KC"], ["Angels", "LAA"],
+  ["Dodgers", "LAD"], ["Marlins", "MIA"], ["Brewers", "MIL"], ["Twins", "MIN"], ["Mets", "NYM"],
+  ["Yankees", "NYY"], ["Athletics", "ATH"], ["Phillies", "PHI"], ["Pirates", "PIT"],
+  ["Padres", "SD"], ["Giants", "SF"], ["Mariners", "SEA"], ["Cardinals", "STL"], ["Rays", "TB"],
+  ["Rangers", "TEX"], ["Blue Jays", "TOR"], ["Nationals", "WSH"],
+];
+function abbrOf(team) {
+  const hit = ABBR.find(([m]) => team.includes(m));
+  return hit ? hit[1] : team.slice(0, 3).toUpperCase();
+}
+
 /* ---- rating models -------------------------------------------------------- */
 /** Hitter rating from OPS, nudged by power/speed volume. 60–99. */
 function rateHitter(st) {
@@ -265,6 +280,52 @@ async function main() {
   gamePlayers.sort((a, b) => b.fame - a.fame);
   console.log(`✓ games: ${gamePlayers.length} unique career players`);
 
+  /* ---- grid dataset (the Immaculate-style "Grid" game) ------------------- */
+  // Per player: the franchises they appeared for + the single-season statistical
+  // milestones they hit. Cells in the game are (team|stat) × (team|stat).
+  const gridStats = [
+    { key: "hr30", label: "30+ HR season" },
+    { key: "hr40", label: "40+ HR season" },
+    { key: "rbi100", label: "100+ RBI season" },
+    { key: "sb30", label: "30+ SB season" },
+    { key: "avg300", label: ".300+ AVG season" },
+    { key: "ops900", label: ".900+ OPS season" },
+    { key: "k200", label: "200+ K season" },
+    { key: "w18", label: "18+ Win season" },
+    { key: "sv30", label: "30+ Save season" },
+    { key: "era300", label: "Sub-3.00 ERA season" },
+  ];
+  const gp = new Map(); // pid -> { teams:Set, flags:Set }
+  for (const c of pool) {
+    let e = gp.get(c.pid);
+    if (!e) { e = { teams: new Set(), flags: new Set() }; gp.set(c.pid, e); }
+    e.teams.add(abbrOf(c.team));
+    if (c.kind === "bat") {
+      if (c.hr >= 30) e.flags.add("hr30");
+      if (c.hr >= 40) e.flags.add("hr40");
+      if (c.rbi >= 100) e.flags.add("rbi100");
+      if (c.sb >= 30) e.flags.add("sb30");
+      if (c.avg >= 0.300) e.flags.add("avg300");
+      if (c.ops >= 0.900) e.flags.add("ops900");
+    } else {
+      if (c.so >= 200) e.flags.add("k200");
+      if (c.w >= 18) e.flags.add("w18");
+      if (c.sv >= 30) e.flags.add("sv30");
+      if (c.eraAvg > 0 && c.eraAvg <= 3.0 && c.ip >= 100) e.flags.add("era300");
+    }
+  }
+  const fameById = new Map(gamePlayers.map((p) => [p.id, p]));
+  const gridPlayers = [];
+  for (const [pid, e] of gp) {
+    const meta = fameById.get(pid);
+    if (!meta) continue; // only recognizable, career-aggregated players are guessable
+    gridPlayers.push({ id: pid, name: meta.name, fame: meta.fame, teams: [...e.teams], flags: [...e.flags] });
+  }
+  gridPlayers.sort((a, b) => b.fame - a.fame);
+  const gridTeams = [...new Set(gridPlayers.flatMap((p) => p.teams))].sort();
+  const grid = { teams: gridTeams, stats: gridStats, players: gridPlayers };
+  console.log(`✓ grid: ${gridPlayers.length} players across ${gridTeams.length} franchises`);
+
   /* ---- per-season standings (ladder) + strength distribution ------------- */
   const laddersBySeason = {};
   const strengthsBySeason = {};
@@ -369,6 +430,7 @@ async function main() {
     writeFile(join(OUT_DIR, "games.json"), JSON.stringify(games)),
     writeFile(join(OUT_DIR, "results.json"), JSON.stringify(results)),
     writeFile(join(OUT_DIR, "strengths.json"), JSON.stringify(strengths)),
+    writeFile(join(OUT_DIR, "grid.json"), JSON.stringify(grid)),
   ]);
 
   console.log(

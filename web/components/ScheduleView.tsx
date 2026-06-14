@@ -56,22 +56,24 @@ export default function ScheduleView() {
 }
 
 function GameCard({ g }: { g: GameResult }) {
-  const final = g.status === "Final";
+  // A "Final" with null scores is an upstream data gap (postponed / no result).
+  const played = g.status === "Final" && g.hs != null && g.as != null;
+  const label = g.status === "Final" && !played ? "No result" : !played ? g.status : "";
   return (
     <div className="card" style={{ padding: ".8rem 1rem", display: "grid", gap: 6 }}>
-      <Row name={g.away} score={g.as} win={g.awayWin} final={final} />
-      <Row name={g.home} score={g.hs} win={g.homeWin} final={final} />
-      {!final && <div style={{ fontSize: ".68rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>{g.status}</div>}
+      <Row name={g.away} score={g.as} win={g.awayWin} played={played} />
+      <Row name={g.home} score={g.hs} win={g.homeWin} played={played} />
+      {label && <div style={{ fontSize: ".68rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>{label}</div>}
     </div>
   );
 }
-function Row({ name, score, win, final }: { name: string; score: number | null; win: boolean | null; final: boolean }) {
+function Row({ name, score, win, played }: { name: string; score: number | null; win: boolean | null; played: boolean }) {
   const [c1] = teamColors(name);
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: win ? 700 : 400, opacity: final && !win ? 0.7 : 1 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: win ? 700 : 400, opacity: played && !win ? 0.7 : 1 }}>
       <span style={{ width: 9, height: 9, borderRadius: 2, background: c1, flexShrink: 0 }} />
       <span style={{ flex: 1, fontSize: ".88rem" }}>{name}</span>
-      <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.1rem" }}>{final && score != null ? score : "—"}</span>
+      <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.1rem" }}>{played && score != null ? score : "—"}</span>
     </div>
   );
 }

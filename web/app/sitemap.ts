@@ -1,21 +1,26 @@
 import type { MetadataRoute } from "next";
 import { SITE } from "@/lib/seo";
 import { notablePlayers } from "@/lib/playerdb";
+import { serverResults } from "@/lib/serverdata";
+import { teamAbbr } from "@/lib/teams";
 
 export const dynamic = "force-static";
 
 const GAMES = [
-  "invincibles", "diamond", "higher-or-lower", "guess-the-player",
+  "invincibles", "diamond", "grid", "higher-or-lower", "guess-the-player",
   "career-path", "beat-the-clock", "score-predictor",
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
+  const results = serverResults();
   const top: MetadataRoute.Sitemap = [
     { url: `${SITE.url}/`, priority: 1, changeFrequency: "daily", lastModified: now },
     { url: `${SITE.url}/play/`, priority: 0.9, changeFrequency: "weekly", lastModified: now },
+    { url: `${SITE.url}/perfect/`, priority: 0.9, changeFrequency: "daily", lastModified: now },
     { url: `${SITE.url}/games/`, priority: 0.8, changeFrequency: "weekly", lastModified: now },
     { url: `${SITE.url}/standings/`, priority: 0.8, changeFrequency: "daily", lastModified: now },
+    { url: `${SITE.url}/teams/`, priority: 0.8, changeFrequency: "weekly", lastModified: now },
     { url: `${SITE.url}/players/`, priority: 0.8, changeFrequency: "weekly", lastModified: now },
     { url: `${SITE.url}/schedule/`, priority: 0.7, changeFrequency: "daily", lastModified: now },
     { url: `${SITE.url}/stats/`, priority: 0.7, changeFrequency: "weekly", lastModified: now },
@@ -28,11 +33,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "weekly",
     lastModified: now,
   }));
+  // one page per franchise (live-season ladder rows are the canonical 30 teams)
+  const teamAbbrs = [
+    ...new Set((results.laddersBySeason[results.liveSeason] ?? []).map((t) => teamAbbr(t.team).toLowerCase())),
+  ];
+  const teams: MetadataRoute.Sitemap = teamAbbrs.map((abbr) => ({
+    url: `${SITE.url}/teams/${abbr}/`,
+    priority: 0.6,
+    changeFrequency: "weekly",
+    lastModified: now,
+  }));
   const players: MetadataRoute.Sitemap = notablePlayers().map((p) => ({
     url: `${SITE.url}/players/${p.id}/${p.slug}/`,
     priority: 0.5,
     changeFrequency: "weekly",
     lastModified: now,
   }));
-  return [...top, ...games, ...players];
+  return [...top, ...games, ...teams, ...players];
 }

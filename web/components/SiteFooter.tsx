@@ -28,11 +28,13 @@ export default function SiteFooter() {
             <strong style={{ color: "var(--text)" }}>Play</strong>
             <Link href="/play">Perfect Season</Link>
             <Link href="/games">Mini-games</Link>
+            <Link href="/perfect">162-0 Tracker</Link>
             <Link href="/leaderboard">Hall of Fame</Link>
           </nav>
           <nav style={{ display: "grid", gap: 6, fontSize: ".85rem" }}>
             <strong style={{ color: "var(--text)" }}>Stats</strong>
             <Link href="/standings">Standings</Link>
+            <Link href="/teams">Teams</Link>
             <Link href="/players">Players</Link>
             <Link href="/schedule">Schedule</Link>
             <Link href="/stats">Leaders</Link>

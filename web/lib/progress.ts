@@ -89,11 +89,22 @@ export function getScore(game: string): ScoreStats {
 
 export function recordScore(game: string, value: number, higherIsBetter = true): boolean {
   const s = load();
-  const cur = s.score[game] ?? { best: 0, plays: 0, lastScore: 0 };
+  const existing = s.score[game];
+  const first = !existing;
+  const cur = existing ?? { best: 0, plays: 0, lastScore: 0 };
   cur.plays++;
   cur.lastScore = value;
-  const isBest = cur.plays === 1 || (higherIsBetter ? value > cur.best : value < cur.best);
-  if (isBest) cur.best = value;
+  // On the very first play we seed `best` from this score, but a 0 isn't a
+  // celebration-worthy "new best" — so only flag isBest when it actually beats
+  // the prior best (or, on a first play, when the score is non-trivial).
+  let isBest: boolean;
+  if (first) {
+    cur.best = value;
+    isBest = higherIsBetter ? value > 0 : true;
+  } else {
+    isBest = higherIsBetter ? value > cur.best : value < cur.best;
+    if (isBest) cur.best = value;
+  }
   s.score[game] = cur;
   save(s);
   return isBest;

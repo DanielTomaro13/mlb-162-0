@@ -35,7 +35,15 @@ async function loadJson<T>(file: string): Promise<T> {
   return data;
 }
 
+export interface GridPlayer { id: number; name: string; fame: number; teams: string[]; flags: string[]; }
+export interface GridData {
+  teams: string[];                              // franchise abbreviations
+  stats: { key: string; label: string }[];      // single-season stat milestones
+  players: GridPlayer[];                         // each player's franchises + milestone flags
+}
+
 export const loadMeta = () => loadJson<Meta>("meta.json");
 export const loadPool = () => loadJson<PoolPlayer[]>("pool.json");
 export const loadResults = () => loadJson<Results>("results.json");
 export const loadStrengths = () => loadJson<{ bySeason: Record<string, number[]> }>("strengths.json");
+export const loadGrid = () => loadJson<GridData>("grid.json");

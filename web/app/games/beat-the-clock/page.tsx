@@ -4,7 +4,7 @@ import { pageMeta } from "@/lib/seo";
 
 export const metadata = pageMeta({
   title: "Beat the Clock — name the MLB home run leaders",
-  description: "Sixty seconds to name 30 of the season's top home run hitters. Type fast and beat your best.",
+  description: "Sixty seconds to name the 30 biggest home run hitters of the last decade. Type fast and beat your best.",
   path: "/games/beat-the-clock",
   keywords: ["MLB home run leaders", "MLB timed game", "name the MLB players"],
 });
@@ -15,7 +15,7 @@ export default function Page() {
       slug="beat-the-clock"
       title="Beat the Clock"
       emoji="⏱️"
-      intro="The clock starts the moment you do. Name as many of the season's top 30 home run hitters as you can in 60 seconds."
+      intro="The clock starts the moment you do. Name as many of the 30 biggest home run hitters of the last decade as you can in 60 seconds."
       howTo={[
         "Press start and begin typing player surnames or full names.",
         "A correct, not-yet-named slugger locks in instantly.",

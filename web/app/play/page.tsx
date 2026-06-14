@@ -10,5 +10,20 @@ export const metadata = pageMeta({
 });
 
 export default function PlayPage() {
-  return <PerfectSeasonGame />;
+  return (
+    <>
+      {/* Server-rendered heading + intro so the page has a crawlable H1 and copy
+          even before the client game hydrates. */}
+      <header style={{ marginBottom: "1.25rem" }}>
+        <h1 style={{ fontSize: "2rem", margin: 0, textTransform: "uppercase" }}>Perfect Season</h1>
+        <p style={{ color: "var(--muted)", marginTop: 6, maxWidth: 640 }}>
+          Spin for an MLB franchise and era, draft a legend into every spot in the lineup and
+          rotation, and chase a flawless 162–0 season. Six modes — Starting Nine, The Roster,
+          Active 18, Salary Cap, The Gauntlet and Cellar Dwellers — with a Monte-Carlo season
+          simulator tuned so only a near-perfect roster has a ~5% shot at 162–0.
+        </p>
+      </header>
+      <PerfectSeasonGame />
+    </>
+  );
 }

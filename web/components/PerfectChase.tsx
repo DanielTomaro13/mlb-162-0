@@ -68,6 +68,7 @@ export default function PerfectChase() {
           {winless.map((w) => `${teamAbbr(w.team)} (0–${w.l})`).join(", ")}.
         </p>
       )}
+      <a href="/perfect" className="btn" style={{ width: "fit-content" }}>Full 162-0 tracker →</a>
     </section>
   );
 }

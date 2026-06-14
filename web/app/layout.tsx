@@ -9,6 +9,8 @@ import AdUnit from "@/components/AdUnit";
 import { AD_CLIENT, AD_SLOTS } from "@/lib/ads";
 import { SITE } from "@/lib/seo";
 
+const CF_BEACON = process.env.NEXT_PUBLIC_CF_BEACON;
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -101,14 +103,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
-        {/* Cloudflare Web Analytics — privacy-friendly, no cookies. Replace the
-            token with this site's beacon token once configured in Cloudflare. */}
-        <Script
-          defer
-          src="https://static.cloudflareinsights.com/beacon.min.js"
-          strategy="afterInteractive"
-          data-cf-beacon='{"token": "REPLACE_WITH_CF_BEACON_TOKEN"}'
-        />
+        {/* Cloudflare Web Analytics — privacy-friendly, no cookies. Only emitted
+            once a real beacon token is provided via NEXT_PUBLIC_CF_BEACON, so we
+            never ship a placeholder token that fires bogus requests. */}
+        {CF_BEACON && (
+          <Script
+            defer
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            strategy="afterInteractive"
+            data-cf-beacon={`{"token": "${CF_BEACON}"}`}
+          />
+        )}
       </body>
     </html>
   );

@@ -18,7 +18,7 @@ type Phase = "loading" | "playing" | "over";
 /** Kind-aware career stat line for the profile card. */
 function statLine(p: GamePlayer): string {
   if (p.kind === "pit") {
-    return `${p.w} W · ${p.so} K · ${p.eraAvg} ERA · ${p.sv} SV`;
+    return `${p.w} W · ${p.so} K · ${p.eraAvg.toFixed(2)} ERA · ${p.sv} SV`;
   }
   return `${p.hr} HR · ${p.rbi} RBI · ${avg3(p.ops)} OPS`;
 }
