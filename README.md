@@ -8,7 +8,7 @@ The baseball entry in the **0 Series**, alongside [AFL 23-0](https://afl23-0.com
 ## What's inside
 
 **Stats & data (SEO-optimised, static-rendered)**
-- Live **standings** by division for every season, straight from the MLB Stats API
+- Live **standings** by division for every season, straight from real MLB data
 - **Stat leaders** — home runs, RBIs, hits, stolen bases, OPS, wins, strikeouts, saves, ERA
 - **Player profiles** with career stats + a static page per player
 - **Schedule & scores** — the live slate and recent finals
@@ -28,19 +28,19 @@ Spin a franchise and era, draft a legend into every spot in the lineup and rotat
 | ⏱️ **Beat the Clock** | Name the top home-run hitters in 60 seconds |
 | 🔮 **Score Predictor** | Call the final score on real MLB games |
 
-Player ratings are an opinionated ranking built from real MLB Stats API season data — a bit of fun, not official stats. More on the [About page](https://mlb162-0.com/about).
+Player ratings are an opinionated ranking built from real MLB season data — a bit of fun, not official stats. More on the [About page](https://mlb162-0.com/about).
 
 ## Tech
 
 - **Next.js (App Router) + TypeScript + React 19**, exported as a **static site** for GitHub Pages
 - **Tailwind v4** + a small CSS design system
 - **SEO**: per-page metadata, Open Graph/Twitter, `sitemap.ts` (800+ player URLs), `robots.ts`, `manifest.ts`, JSON-LD (WebSite, WebApplication, Person, VideoGame, BreadcrumbList)
-- A **pipeline** snapshots the public MLB Stats API into JSON the pages read at build time; a global leaderboard runs on an optional Cloudflare Worker
+- A **pipeline** snapshots real MLB data into JSON the pages read at build time; a global leaderboard runs on an optional Cloudflare Worker
 
 ## Project layout
 
 ```
-pipeline/        # data pipeline (MLB Stats API → datasets, ratings)
+pipeline/        # data pipeline (MLB data → datasets, ratings)
 web/app/         # routes (pages, games, sitemap/robots/manifest)
 web/components/  # UI + games/ (client game components)
 web/lib/         # game engine, simulator, SEO helpers
@@ -54,7 +54,7 @@ worker/          # Cloudflare Worker + KV leaderboard (optional)
 npm install
 npm run dev      # http://localhost:3000
 npm run build    # static export to web/out
-npm run data     # regenerate the dataset from the MLB Stats API
+npm run data     # regenerate the dataset from real MLB data
 ```
 
 ## Deploy (GitHub Pages)

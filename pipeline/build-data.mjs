@@ -32,10 +32,24 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const API = process.env.API_BASE || "https://statsapi.mlb.com/api/v1";
-const MAX_SEASONS = Number(process.env.MAX_SEASONS || 26);
-const POOL_MIN_PA = Number(process.env.POOL_MIN_PA || 50);
-const POOL_MIN_IP = Number(process.env.POOL_MIN_IP || 15);
+// The player pool reaches back to the start of the modern era; standings (which
+// we group by division) stay in the modern divisional era.
+const POOL_START_YEAR = Number(process.env.POOL_START_YEAR || 1901);
+const STANDINGS_DEPTH = Number(process.env.STANDINGS_DEPTH || 27);
 const CONCURRENCY = Number(process.env.CONCURRENCY || 8);
+
+/**
+ * Era-scaled inclusion thresholds: recent seasons keep deep benches (more
+ * players), older seasons keep only the regulars/stars so a century of history
+ * doesn't bloat the shipped pool. Returns { pa, ip } minimums for a season.
+ */
+function minFor(season) {
+  if (season >= 2010) return { pa: 50, ip: 15 };
+  if (season >= 1990) return { pa: 120, ip: 35 };
+  if (season >= 1969) return { pa: 200, ip: 60 };   // divisional era
+  if (season >= 1947) return { pa: 280, ip: 90 };   // integration era
+  return { pa: 350, ip: 110 };                        // dead-/live-ball early era
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(__dirname, "..", "web", "public", "data");
@@ -168,13 +182,14 @@ function pitcherRole(st) {
 async function main() {
   const t0 = Date.now();
 
-  /* completed seasons for the player pool, newest first */
+  /* completed seasons for the player pool, newest first — back to the modern era */
   const poolSeasons = [];
-  for (let y = LATEST_COMPLETE; y > LATEST_COMPLETE - MAX_SEASONS; y--) poolSeasons.push(y);
-  /* every season we want standings/fixtures for (includes the live one) */
-  const allSeasons = [...new Set([NOW_SEASON, ...poolSeasons])].sort((a, b) => b - a);
+  for (let y = LATEST_COMPLETE; y >= POOL_START_YEAR; y--) poolSeasons.push(y);
+  /* standings stay in the divisional/modern era (the live one + recent depth) */
+  const allSeasons = [];
+  for (let y = NOW_SEASON; y > NOW_SEASON - STANDINGS_DEPTH; y--) allSeasons.push(y);
 
-  console.log(`→ MLB Stats API · pool seasons ${poolSeasons[poolSeasons.length - 1]}–${poolSeasons[0]}, live ${NOW_SEASON}`);
+  console.log(`→ pool seasons ${poolSeasons[poolSeasons.length - 1]}–${poolSeasons[0]} (${poolSeasons.length}), standings ${allSeasons[allSeasons.length - 1]}–${allSeasons[0]}, live ${NOW_SEASON}`);
 
   /* ---- teams (current map: id -> {name, abbr, league, division}) ---------- */
   const teamsResp = await api(`/teams?sportId=1&season=${LATEST_COMPLETE}`);
@@ -191,6 +206,7 @@ async function main() {
   const teamsBySeason = {};
 
   for (const season of poolSeasons) {
+    const thr = minFor(season);
     for (const group of ["hitting", "pitching"]) {
       const data = await api(
         `/stats?stats=season&group=${group}&season=${season}&sportId=1&limit=2000&playerPool=All`
@@ -205,7 +221,7 @@ async function main() {
 
         if (group === "hitting") {
           const pa = num(st.plateAppearances);
-          if (pa < POOL_MIN_PA || apiPos === "P") continue;
+          if (pa < thr.pa || apiPos === "P") continue;
           let pos = apiPos || "DH";
           if (pos === "OF") pos = "CF";
           const card = {
@@ -225,7 +241,7 @@ async function main() {
           if (teamName) (teamsBySeason[season] ||= new Set()).add(teamName);
         } else {
           const innings = ip(st.inningsPitched);
-          if (innings < POOL_MIN_IP && num(st.saves) < 5 && num(st.gamesPitched) < 25) continue;
+          if (innings < thr.ip && num(st.saves) < 5 && num(st.gamesPitched) < 25) continue;
           const pos = pitcherRole(st);
           const elig = pos === "CL" ? ["CL", "RP"] : [pos];
           const card = {
@@ -259,9 +275,11 @@ async function main() {
     if (!c) {
       c = {
         id: p.pid, name: p.name, kind: p.kind, teamCounts: {}, posCounts: {},
-        seasons: new Set(), bestRating: 0,
-        hr: 0, rbi: 0, runs: 0, hits: 0, sb: 0, db: 0, tp: 0, bb: 0, soBat: 0, opsSum: 0, opsN: 0,
-        w: 0, l: 0, sv: 0, so: 0, ipSum: 0, bbPit: 0, eraSum: 0, eraN: 0,
+        seasons: new Set(), bestRating: 0, g: 0,
+        hr: 0, rbi: 0, runs: 0, hits: 0, sb: 0, db: 0, tp: 0, bb: 0, soBat: 0, tb: 0,
+        opsSum: 0, obpSum: 0, slgSum: 0, rateN: 0,
+        w: 0, l: 0, sv: 0, so: 0, ipSum: 0, bbPit: 0, hra: 0, sho: 0, cg: 0, gs: 0,
+        eraSum: 0, whipSum: 0, k9Sum: 0, eraN: 0,
       };
       careers.set(p.pid, c);
     }
@@ -269,13 +287,15 @@ async function main() {
     c.posCounts[p.pos] = (c.posCounts[p.pos] || 0) + 1;
     c.seasons.add(Number(p.era));
     c.bestRating = Math.max(c.bestRating, p.rating);
+    c.g += p.g;
     if (p.kind === "bat") {
       c.hr += p.hr; c.rbi += p.rbi; c.runs += p.runs; c.hits += p.hits; c.sb += p.sb;
-      c.db += p.db; c.tp += p.tp; c.bb += p.bb; c.soBat += p.so;
-      c.opsSum += p.ops; c.opsN++;
+      c.db += p.db; c.tp += p.tp; c.bb += p.bb; c.soBat += p.so; c.tb += p.tb;
+      c.opsSum += p.ops; c.obpSum += p.obp; c.slgSum += p.slg; c.rateN++;
     } else {
       c.w += p.w; c.l += p.l; c.sv += p.sv; c.so += p.so; c.ipSum += p.ip; c.bbPit += p.bb;
-      c.eraSum += p.eraAvg; c.eraN++;
+      c.hra += p.hra; c.sho += p.sho; c.cg += p.cg; c.gs += p.gs;
+      c.eraSum += p.eraAvg; c.whipSum += p.whip; c.k9Sum += p.k9; c.eraN++;
     }
   }
   const gamePlayers = [];
@@ -289,16 +309,18 @@ async function main() {
       c.bestRating + Math.min(20, c.seasons.size * 2) +
       (isBat ? c.hr / 20 + c.sb / 40 : c.so / 200 + c.sv / 20)
     );
+    const rateN = c.rateN || 1, eraN = c.eraN || 1;
     gamePlayers.push({
       id: c.id, name: c.name, team, pos, posName: POS_LABEL[pos] || pos,
       kind: c.kind, firstYear: yrs[0], lastYear: yrs[yrs.length - 1],
-      seasons: c.seasons.size, rating: c.bestRating, fame,
+      seasons: c.seasons.size, g: c.g, rating: c.bestRating, fame,
       // career counting + rate lines (per the player's kind)
       hr: c.hr, rbi: c.rbi, runs: c.runs, hits: c.hits, sb: c.sb,
-      db: c.db, tp: c.tp, bb: c.bb, soBat: c.soBat,
-      ops: c.opsN ? +(c.opsSum / c.opsN).toFixed(3) : 0,
+      db: c.db, tp: c.tp, bb: c.bb, soBat: c.soBat, tb: c.tb,
+      ops: +(c.opsSum / rateN).toFixed(3), obp: +(c.obpSum / rateN).toFixed(3), slg: +(c.slgSum / rateN).toFixed(3),
       w: c.w, l: c.l, sv: c.sv, so: c.so, ip: Math.round(c.ipSum), bbPit: c.bbPit,
-      eraAvg: c.eraN ? +(c.eraSum / c.eraN).toFixed(2) : 0,
+      gs: c.gs, sho: c.sho, cg: c.cg, hra: c.hra,
+      eraAvg: +(c.eraSum / eraN).toFixed(2), whip: +(c.whipSum / eraN).toFixed(2), k9: +(c.k9Sum / eraN).toFixed(1),
     });
   }
   gamePlayers.sort((a, b) => b.fame - a.fame);

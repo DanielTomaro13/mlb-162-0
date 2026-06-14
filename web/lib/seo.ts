@@ -9,7 +9,7 @@ export const SITE = {
   tagline:
     "Build an all-time MLB roster and chase a perfect 162-0 season — plus baseball mini-games, standings and stat leaders.",
   description:
-    "Spin for an MLB franchise and era, draft a legend into every spot in the lineup and rotation, and chase a flawless 162-0 season. Plus a vault of baseball mini-games — Diamond Wordle, Higher or Lower, Guess the Player, Career Path, Beat the Clock and Score Predictor — with live standings, schedules, stat leaders and player profiles. Player ratings built from real MLB Stats API season data.",
+    "Spin for an MLB franchise and era, draft a legend into every spot in the lineup and rotation, and chase a flawless 162-0 season. Plus a vault of baseball mini-games — Diamond Wordle, Higher or Lower, Guess the Player, Career Path, Beat the Clock and Score Predictor — with live standings, schedules, stat leaders and player profiles. Player ratings built from real MLB season data.",
   twitter: "@mlb1620",
 };
 

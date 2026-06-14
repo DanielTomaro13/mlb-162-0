@@ -78,7 +78,7 @@ export default function StatsBoards({ players }: { players: ProfilePlayer[] }) {
         })}
       </div>
       <p style={{ fontSize: ".75rem", color: "var(--muted)" }}>
-        Career totals across the seasons in the pool ({players.length ? "" : ""}MLB Stats API). ERA &amp; OPS are season averages.
+        Career totals across the seasons in the pool ({players.length ? "" : ""}MLB data). ERA &amp; OPS are season averages.
       </p>
     </div>
   );

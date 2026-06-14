@@ -89,9 +89,28 @@ export default async function TeamPage({ params }: { params: Promise<{ abbr: str
   const divName = (row.division ?? "").split(/\s+/).pop() ?? "";
 
   const players = teamPlayers(row.team);
+  const hitters = players.filter((p) => p.kind === "bat");
+  const pitchers = players.filter((p) => p.kind === "pit");
   const top = [...players].sort((a, b) => b.rating - a.rating).slice(0, 12);
-  const hrLeaders = [...players].sort((a, b) => b.hr - a.hr).slice(0, 5);
-  const soLeaders = [...players].sort((a, b) => b.so - a.so).slice(0, 5);
+
+  // Hitter leader boards
+  const hrLeaders = [...hitters].sort((a, b) => b.hr - a.hr).slice(0, 5);
+  const rbiLeaders = [...hitters].sort((a, b) => b.rbi - a.rbi).slice(0, 5);
+  const hitsLeaders = [...hitters].sort((a, b) => b.hits - a.hits).slice(0, 5);
+  const sbLeaders = [...hitters].sort((a, b) => b.sb - a.sb).slice(0, 5);
+  const opsLeaders = [...hitters].sort((a, b) => b.ops - a.ops).slice(0, 5);
+
+  // Pitcher leader boards
+  const soLeaders = [...pitchers].sort((a, b) => b.so - a.so).slice(0, 5);
+  const winLeaders = [...pitchers].sort((a, b) => b.w - a.w).slice(0, 5);
+  const svLeaders = [...pitchers].sort((a, b) => b.sv - a.sv).slice(0, 5);
+  const eraLeaders = [...pitchers]
+    .filter((p) => p.ip >= 200)
+    .sort((a, b) => a.eraAvg - b.eraAvg)
+    .slice(0, 5);
+
+  // Franchise snapshot
+  const topRated = top[0] ?? null;
 
   const sportsTeamLd = {
     "@context": "https://schema.org",
@@ -177,10 +196,48 @@ export default async function TeamPage({ params }: { params: Promise<{ abbr: str
 
       {players.length > 0 && (
         <section style={{ display: "grid", gap: 12 }}>
-          <h2 style={{ margin: 0, fontSize: "1.25rem", textTransform: "uppercase", letterSpacing: ".03em" }}>Franchise stat leaders</h2>
+          <h2 style={{ margin: 0, fontSize: "1.25rem", textTransform: "uppercase", letterSpacing: ".03em" }}>Franchise snapshot</h2>
+          <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))" }}>
+            {stat("Rated Players", players.length)}
+            {stat("Hitters", hitters.length)}
+            {stat("Pitchers", pitchers.length)}
+            {stat("Highest Rated", topRated ? `${topRated.rating}` : "—")}
+          </div>
+          {topRated && (
+            <p style={{ margin: 0, color: "var(--muted)", fontSize: ".85rem" }}>
+              Top-rated all-time:{" "}
+              <Link href={`/players/${topRated.id}/${topRated.slug}`} style={{ color: "var(--accent)" }}>
+                {topRated.name}
+              </Link>{" "}
+              ({topRated.posName}, {topRated.rating}).
+            </p>
+          )}
+        </section>
+      )}
+
+      {hitters.length > 0 && (
+        <section style={{ display: "grid", gap: 12 }}>
+          <h2 style={{ margin: 0, fontSize: "1.25rem", textTransform: "uppercase", letterSpacing: ".03em" }}>Hitting leaders</h2>
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))" }}>
             <Board title="Home runs" rows={hrLeaders} value={(p) => String(p.hr)} unit="HR" />
+            <Board title="RBI" rows={rbiLeaders} value={(p) => String(p.rbi)} unit="RBI" />
+            <Board title="Hits" rows={hitsLeaders} value={(p) => String(p.hits)} unit="H" />
+            <Board title="Stolen bases" rows={sbLeaders} value={(p) => String(p.sb)} unit="SB" />
+            <Board title="OPS" rows={opsLeaders} value={(p) => avg3(p.ops)} unit="OPS" />
+          </div>
+        </section>
+      )}
+
+      {pitchers.length > 0 && (
+        <section style={{ display: "grid", gap: 12 }}>
+          <h2 style={{ margin: 0, fontSize: "1.25rem", textTransform: "uppercase", letterSpacing: ".03em" }}>Pitching leaders</h2>
+          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))" }}>
+            <Board title="Wins" rows={winLeaders} value={(p) => String(p.w)} unit="W" />
             <Board title="Strikeouts" rows={soLeaders} value={(p) => String(p.so)} unit="K" />
+            <Board title="Saves" rows={svLeaders} value={(p) => String(p.sv)} unit="SV" />
+            {eraLeaders.length > 0 && (
+              <Board title="ERA (200+ IP)" rows={eraLeaders} value={(p) => p.eraAvg.toFixed(2)} unit="ERA" />
+            )}
           </div>
         </section>
       )}

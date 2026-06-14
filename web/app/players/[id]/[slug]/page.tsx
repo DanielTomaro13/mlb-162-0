@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { pageMeta, breadcrumbJsonLd, SITE } from "@/lib/seo";
@@ -17,8 +18,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const p = playerById(id);
   if (!p) return {};
   const line = p.kind === "bat"
-    ? `${p.hr} HR, ${p.rbi} RBI, ${avg3(p.ops)} OPS`
-    : `${p.w} wins, ${p.so} K, ${p.eraAvg.toFixed(2)} ERA`;
+    ? `${p.hr} HR, ${p.rbi} RBI, ${p.hits} hits, ${avg3(p.ops)} OPS`
+    : `${p.w} wins, ${p.so} K, ${p.eraAvg.toFixed(2)} ERA, ${p.whip.toFixed(2)} WHIP`;
   return pageMeta({
     title: `${p.name} — MLB profile, stats & rating`,
     description: `${p.name}: ${p.posName} for ${p.team}. ${line} across ${p.firstYear}–${p.lastYear}. All-time MLB 162-0 rating ${p.rating}.`,
@@ -48,6 +49,12 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
       <div style={{ fontSize: ".66rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>{label}</div>
     </div>
   );
+  const groupHead = (label: string) => (
+    <h2 style={{ margin: 0, fontSize: "1.1rem", textTransform: "uppercase", letterSpacing: ".03em", color: "var(--muted)" }}>{label}</h2>
+  );
+  const grid = (children: ReactNode) => (
+    <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))" }}>{children}</div>
+  );
 
   return (
     <div style={{ display: "grid", gap: "1.25rem" }}>
@@ -69,36 +76,76 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
           </div>
         </div>
       </header>
-      <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))" }}>
-        {isBat ? (
-          <>
-            {stat("Home Runs", p.hr)}
-            {stat("RBI", p.rbi)}
-            {stat("Hits", p.hits)}
-            {stat("Runs", p.runs)}
-            {stat("Stolen Bases", p.sb)}
-            {stat("Doubles", p.db)}
-            {stat("Walks", p.bb)}
-            {stat("Strikeouts", p.soBat)}
-            {stat("OPS", avg3(p.ops))}
-          </>
-        ) : (
-          <>
-            {stat("Wins", p.w)}
-            {stat("Losses", p.l)}
-            {stat("Strikeouts", p.so)}
-            {stat("Saves", p.sv)}
-            {stat("Innings", p.ip)}
-            {stat("Walks", p.bbPit)}
-            {stat("ERA", p.eraAvg.toFixed(2))}
-            {stat("Seasons", p.seasons)}
-          </>
-        )}
-        {stat("Era", `${p.firstYear}–${p.lastYear}`)}
-      </div>
+      {isBat ? (
+        <div style={{ display: "grid", gap: "1.1rem" }}>
+          <section style={{ display: "grid", gap: 10 }}>
+            {groupHead("Counting stats")}
+            {grid(
+              <>
+                {stat("Games", p.g)}
+                {stat("Home Runs", p.hr)}
+                {stat("RBI", p.rbi)}
+                {stat("Runs", p.runs)}
+                {stat("Hits", p.hits)}
+                {stat("Doubles", p.db)}
+                {stat("Triples", p.tp)}
+                {stat("Total Bases", p.tb)}
+                {stat("Stolen Bases", p.sb)}
+                {stat("Walks", p.bb)}
+                {stat("Strikeouts", p.soBat)}
+              </>,
+            )}
+          </section>
+          <section style={{ display: "grid", gap: 10 }}>
+            {groupHead("Rate & career")}
+            {grid(
+              <>
+                {stat("OBP", avg3(p.obp))}
+                {stat("SLG", avg3(p.slg))}
+                {stat("OPS", avg3(p.ops))}
+                {stat("Seasons", p.seasons)}
+                {stat("Era", `${p.firstYear}–${p.lastYear}`)}
+              </>,
+            )}
+          </section>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: "1.1rem" }}>
+          <section style={{ display: "grid", gap: 10 }}>
+            {groupHead("Counting stats")}
+            {grid(
+              <>
+                {stat("Games", p.g)}
+                {stat("Games Started", p.gs)}
+                {stat("Wins", p.w)}
+                {stat("Losses", p.l)}
+                {stat("Saves", p.sv)}
+                {stat("Innings", p.ip)}
+                {stat("Strikeouts", p.so)}
+                {stat("Walks", p.bbPit)}
+                {stat("Shutouts", p.sho)}
+                {stat("Complete Games", p.cg)}
+                {stat("HR Allowed", p.hra)}
+              </>,
+            )}
+          </section>
+          <section style={{ display: "grid", gap: 10 }}>
+            {groupHead("Rate & career")}
+            {grid(
+              <>
+                {stat("ERA", p.eraAvg.toFixed(2))}
+                {stat("WHIP", p.whip.toFixed(2))}
+                {stat("K/9", p.k9.toFixed(1))}
+                {stat("Seasons", p.seasons)}
+                {stat("Era", `${p.firstYear}–${p.lastYear}`)}
+              </>,
+            )}
+          </section>
+        </div>
+      )}
       <p style={{ color: "var(--muted)", fontSize: ".88rem", lineHeight: 1.6 }}>
         {p.name} is rated <strong style={{ color: "var(--text)" }}>{p.rating}</strong> in MLB 162-0 — a number built from real
-        MLB Stats API season data between {p.firstYear} and {p.lastYear}. {" "}
+        real MLB season data between {p.firstYear} and {p.lastYear}. {" "}
         <Link href="/play" style={{ color: "var(--accent)" }}>Draft {p.name.split(" ")[0]} into your perfect roster →</Link>
       </p>
     </div>

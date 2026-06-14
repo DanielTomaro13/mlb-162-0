@@ -45,7 +45,7 @@ export default function LiveStandingsPreview({ rows, season }: { rows: LadderRow
         </table>
       </div>
       <p style={{ fontSize: ".78rem", color: "var(--muted)", marginTop: 8 }}>
-        Real {season} standings from the MLB Stats API. Curious who&apos;s closest to a flawless year?{" "}
+        Real {season} standings from real MLB data. Curious who&apos;s closest to a flawless year?{" "}
         <Link href="/perfect" style={{ color: "var(--accent)" }}>See the 162-0 tracker →</Link>
       </p>
     </section>

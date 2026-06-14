@@ -1,6 +1,6 @@
 /**
  * Shared types + loaders for the mini-games dataset (public/data/games.json),
- * produced by pipeline/build-data.mjs from the real MLB Stats API.
+ * produced by pipeline/build-data.mjs from the real MLB data.
  *
  * Each entry is a career-aggregated player across the seasons in the pool, with
  * a `kind` flag selecting which stat line is meaningful (hitter vs pitcher).
@@ -15,6 +15,7 @@ export interface GamePlayer {
   firstYear: number;
   lastYear: number;
   seasons: number;
+  g: number;         // games played/pitched
   rating: number;
   fame: number;
   // hitters (career totals + rate)
@@ -27,7 +28,10 @@ export interface GamePlayer {
   tp: number;        // triples
   bb: number;        // walks drawn
   soBat: number;     // strikeouts (as a batter)
+  tb: number;        // total bases
   ops: number;
+  obp: number;       // career on-base (season average)
+  slg: number;       // career slugging (season average)
   // pitchers (career totals + rate)
   w: number;
   l: number;
@@ -35,7 +39,13 @@ export interface GamePlayer {
   so: number;
   ip: number;
   bbPit: number;     // walks issued
+  gs: number;        // games started
+  sho: number;       // shutouts
+  cg: number;        // complete games
+  hra: number;       // home runs allowed
   eraAvg: number;
+  whip: number;      // career WHIP (season average)
+  k9: number;        // career K/9 (season average)
 }
 
 export interface GamesData {

@@ -1,129 +1,85 @@
 import Link from "next/link";
-import { pageMeta, breadcrumbJsonLd, SITE } from "@/lib/seo";
-import { serverResults } from "@/lib/serverdata";
-import { teamColors, teamAbbr } from "@/lib/teams";
+import { pageMeta, breadcrumbJsonLd } from "@/lib/seo";
+import { allPlayers } from "@/lib/playerdb";
 import JsonLd from "@/components/JsonLd";
+import TopPlayersLeaderboard from "@/components/TopPlayersLeaderboard";
 
-export function generateMetadata() {
-  const r = serverResults();
-  return pageMeta({
-    title: `Can an MLB team go 162-0? The ${r.liveSeason} perfect-season tracker`,
-    description: `No MLB team has ever gone 162-0. Track who's still unbeaten in ${r.liveSeason}, who came closest, and the inverse 0-162 chase — updated daily from the official MLB Stats API.`,
-    path: "/perfect",
-    keywords: [
-      "162-0", "can a team go 162-0", "MLB perfect season", "MLB undefeated",
-      "best MLB record ever", "MLB longest winning streak", "162-0 tracker",
-    ],
-  });
-}
+export const metadata = pageMeta({
+  title: "The 162-0 Leaderboard — the best MLB players of all time",
+  description: "The top-rated players across MLB history — the legends a perfect 162-0 roster is built from. Plus how close any team has come to a flawless season.",
+  path: "/perfect",
+  keywords: [
+    "best MLB players of all time", "MLB player rankings", "162-0", "MLB perfect season",
+    "top rated MLB players", "all-time MLB leaderboard",
+  ],
+});
 
 const FAQ = [
   {
     q: "Has an MLB team ever gone 162-0?",
-    a: "No. No team has ever come close to a perfect 162-0 season. The best regular-season records in modern history are the 2001 Seattle Mariners (116-46) and, going back further, the 1906 Chicago Cubs (116-36). Both still lost dozens of games.",
+    a: "No. No team has ever come close to a perfect 162-0 season. The best regular-season records in modern history are the 2001 Seattle Mariners (116-46) and the 1906 Chicago Cubs (116-36). Both still lost dozens of games.",
+  },
+  {
+    q: "Who are the highest-rated players?",
+    a: "Our 60–99 rating reflects how a player actually performed — hitters for overall production, pitchers for run prevention and missing bats — with a sample-size adjustment. The leaderboard above ranks the very best across every season since 1901.",
   },
   {
     q: "What is the best record in MLB regular-season history?",
-    a: "By wins, the 2001 Seattle Mariners and 1906 Chicago Cubs share the record at 116. By winning percentage, the 1906 Cubs (.763) lead the modern era. A 162-0 season would mean a 1.000 winning percentage — something no team has ever approached.",
-  },
-  {
-    q: "How long is the longest MLB winning streak?",
-    a: "The 1916 New York Giants reeling off 26 straight (with a tie in the middle) is the longest unbeaten run; the 2002 Oakland Athletics' 20-game streak is the longest pure winning streak of the modern era. Even those fall far short of a full 162-game season.",
+    a: "By wins, the 2001 Mariners and 1906 Cubs share the record at 116. By winning percentage, the 1906 Cubs (.763) lead the modern era. A 162-0 season would be a 1.000 winning percentage — something no team has ever approached.",
   },
   {
     q: "Why is a 162-0 season essentially impossible?",
-    a: "Even an all-time-great team wins around 60-65% of its games. To go 162-0 you'd need to win every single game against major-league opposition over six months — the probability is astronomically small, which is exactly what makes chasing it on MLB 162-0 fun.",
+    a: "Even an all-time-great team wins around 60-65% of its games. Stringing together 162 straight wins against major-league opposition over six months is astronomically unlikely — which is exactly what makes chasing it here fun.",
   },
 ];
 
 export default function PerfectPage() {
-  const r = serverResults();
-  const rows = [...r.schedule.perfect].sort((a, b) => b.w - a.w || a.l - b.l);
-  const alive = rows.filter((t) => t.alive && t.w > 0);
-  const winless = rows.filter((t) => t.winless && t.l > 0);
-  const best = rows[0];
+  const players = allPlayers();
+  // only the top slice is serialised into the client leaderboard (filter + top 50)
+  const top = [...players].sort((a, b) => b.rating - a.rating || b.fame - a.fame).slice(0, 160);
 
   const faqLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: FAQ.map((f) => ({
-      "@type": "Question",
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer", text: f.a },
-    })),
+    mainEntity: FAQ.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
   };
 
   return (
     <div style={{ display: "grid", gap: "1.75rem" }}>
       <JsonLd data={faqLd} />
-      <JsonLd data={breadcrumbJsonLd([{ name: "162-0 Tracker", path: "/perfect" }])} />
+      <JsonLd data={breadcrumbJsonLd([{ name: "162-0 Leaderboard", path: "/perfect" }])} />
 
       <header style={{ display: "grid", gap: 10 }}>
-        <span className="chip" style={{ width: "fit-content", color: "var(--gold)" }}>Live · {r.liveSeason} · MLB Stats API</span>
+        <span className="chip" style={{ width: "fit-content", color: "var(--gold)" }}>{players.length.toLocaleString()} players rated · since 1901</span>
         <h1 style={{ fontSize: "clamp(2rem,6vw,3rem)", margin: 0, textTransform: "uppercase", lineHeight: 1 }}>
-          Can a team go <span style={{ color: "var(--accent)" }}>162–0</span>?
+          The <span style={{ color: "var(--accent)" }}>162–0</span> leaderboard
         </h1>
         <p style={{ color: "var(--muted)", maxWidth: 680, fontSize: "1.05rem" }}>
-          No Major League team has ever had a perfect season. This is the live {r.liveSeason} tracker of who&apos;s
-          still unbeaten, who came closest, and the gloriously bad inverse — the chase for 0–162.
+          The highest-rated players in MLB history — the legends a flawless 162–0 roster is built from.
+          Think you can assemble a better nine? <Link href="/play" style={{ color: "var(--accent)" }}>Draft your team →</Link>
         </p>
       </header>
 
-      <section className="card" style={{ padding: "1.25rem", borderColor: alive.length ? "var(--accent-2)" : "var(--border)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-          <h2 style={{ margin: 0, fontSize: "1.2rem" }}>Still perfect in {r.liveSeason}</h2>
-          <span className="chip" style={{ color: alive.length ? "var(--accent-2)" : "var(--muted)" }}>
-            {alive.length ? `${alive.length} unbeaten` : "All eliminated"}
-          </span>
-        </div>
-        <p style={{ color: "var(--muted)", margin: 0, fontSize: ".95rem" }}>
-          {alive.length
-            ? `${alive.length} ${alive.length === 1 ? "team is" : "teams are"} still without a loss. The dream lives — for now.`
-            : `Every team has lost at least once, so a perfect ${r.liveSeason} is already off the table. Here's the full board, closest to perfect first.`}
-        </p>
-      </section>
-
       <section>
-        <h2 style={{ marginBottom: 10 }}>The full chase — closest to 162–0</h2>
-        <div className="card scroll-x" style={{ padding: ".4rem .6rem" }}>
-          <table className="stat">
-            <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>From perfect</th></tr></thead>
-            <tbody>
-              {rows.map((t, i) => {
-                const [c1] = teamColors(t.team);
-                const pct = t.w + t.l ? (t.w / (t.w + t.l)).toFixed(3).replace(/^0/, "") : ".000";
-                return (
-                  <tr key={t.team} style={t.alive && t.w > 0 ? { background: "rgba(55,194,129,0.06)" } : undefined}>
-                    <td style={{ color: "var(--muted)", fontFamily: "var(--font-mono)" }}>{i + 1}</td>
-                    <td style={{ display: "flex", gap: 8, alignItems: "center", whiteSpace: "nowrap" }}>
-                      <span style={{ width: 9, height: 9, borderRadius: 2, background: c1 }} />
-                      <Link href={`/teams/${teamAbbr(t.team).toLowerCase()}`}>{teamAbbr(t.team)} · {t.team}</Link>
-                      {t.alive && t.w > 0 && <span className="chip" style={{ fontSize: ".6rem", color: "var(--accent-2)" }}>ALIVE</span>}
-                    </td>
-                    <td style={{ fontWeight: 700, color: "var(--accent-2)" }}>{t.w}</td>
-                    <td style={{ color: "var(--danger)" }}>{t.l}</td>
-                    <td>{pct}</td>
-                    <td style={{ color: "var(--muted)" }}>{t.l === 0 ? "still perfect" : `${t.l} ${t.l === 1 ? "loss" : "losses"} in`}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <h2 style={{ marginBottom: 10 }}>Top-rated players, all time</h2>
+        <TopPlayersLeaderboard players={top} limit={50} />
       </section>
 
-      {winless.length > 0 && (
-        <section className="card" style={{ padding: "1.1rem" }}>
-          <h2 style={{ margin: "0 0 6px", fontSize: "1.1rem" }}>🥶 The other perfect season (0–162)</h2>
-          <p style={{ color: "var(--muted)", margin: 0, fontSize: ".9rem" }}>
-            Still chasing a winless year: {winless.map((w) => `${teamAbbr(w.team)} (0–${w.l})`).join(", ")}.
-            Build the worst roster imaginable in <Link href="/play" style={{ color: "var(--accent)" }}>Cellar Dwellers mode →</Link>
-          </p>
-        </section>
-      )}
+      <section className="card" style={{ padding: "1.25rem", display: "grid", gap: 8 }}>
+        <h2 style={{ margin: 0, fontSize: "1.2rem" }}>Build the perfect roster</h2>
+        <p style={{ color: "var(--muted)", margin: 0, fontSize: ".92rem" }}>
+          Draft these legends onto the diamond and simulate a full 162-game season. A flawless 162–0
+          is reserved for only the very best rosters — see if yours makes the Hall of Fame.
+        </p>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Link href="/play" className="btn btn-primary">⚾ Draft your team</Link>
+          <Link href="/leaderboard" className="btn">Hall of Fame</Link>
+          <Link href="/standings" className="btn">Live standings</Link>
+        </div>
+      </section>
 
       <section style={{ display: "grid", gap: 12 }}>
-        <h2 style={{ margin: 0 }}>The closest anyone has come</h2>
+        <h2 style={{ margin: 0 }}>The closest any team has come to 162–0</h2>
         <div className="grid-cards" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))" }}>
           {[
             { t: "116–46", s: "2001 Seattle Mariners — tied the modern wins record, then lost the ALCS." },
@@ -150,12 +106,6 @@ export default function PerfectPage() {
           ))}
         </div>
       </section>
-
-      <p style={{ color: "var(--muted)", fontSize: ".9rem" }}>
-        Think you can do better than {best ? `${teamAbbr(best.team)}'s ${best.w}–${best.l}` : "the field"}?{" "}
-        <Link href="/play" style={{ color: "var(--accent)" }}>Draft an all-time roster and chase 162–0 →</Link>
-        {" · "}<Link href="/standings" style={{ color: "var(--accent)" }}>Full standings</Link>
-      </p>
     </div>
   );
 }

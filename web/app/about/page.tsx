@@ -3,9 +3,9 @@ import { pageMeta, SITE } from "@/lib/seo";
 
 export const metadata = pageMeta({
   title: "About & method — how MLB 162-0 works",
-  description: "How MLB 162-0 builds player ratings from real MLB Stats API season data, what the 162-0 chase means, and how each game works.",
+  description: "How MLB 162-0 builds player ratings from real MLB season data, what the 162-0 chase means, and how each game works.",
   path: "/about",
-  keywords: ["MLB 162-0 about", "player rating method", "MLB Stats API"],
+  keywords: ["MLB 162-0 about", "player rating method", "MLB data"],
 });
 
 export default function AboutPage() {
@@ -32,11 +32,9 @@ export default function AboutPage() {
       <section style={{ display: "grid", gap: 10 }}>
         <h2 style={{ margin: 0 }}>The data</h2>
         <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
-          Everything is built from the official, public{" "}
-          <a href="https://statsapi.mlb.com" style={{ color: "var(--accent)" }}>MLB Stats API</a> —
-          the same feeds the league&apos;s own apps read. Standings, schedules and scores come straight
-          from it, refreshed daily. The player pool aggregates real season hitting and pitching
-          stat lines across recent seasons.
+          Everything is built from real Major League Baseball season statistics. Standings, schedules
+          and scores are kept current daily, and the player pool aggregates real season hitting and
+          pitching lines going all the way back to the start of the modern era in 1901.
         </p>
       </section>
 

@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { serverMeta, serverResults } from "@/lib/serverdata";
-import { notablePlayers } from "@/lib/playerdb";
-import { teamColors } from "@/lib/teams";
-import { avg3 } from "@/lib/format";
+import { allPlayers } from "@/lib/playerdb";
 import LiveLeaders from "@/components/LiveLeaders";
 import LiveStandingsPreview from "@/components/LiveStandingsPreview";
+import TopPlayersLeaderboard from "@/components/TopPlayersLeaderboard";
 import HomeLeaderboard from "@/components/HomeLeaderboard";
 import DailyLeaderboard from "@/components/DailyLeaderboard";
 import { GAMES } from "@/lib/gamelist";
@@ -12,14 +11,14 @@ import { GAMES } from "@/lib/gamelist";
 export default function Home() {
   const meta = serverMeta();
   const results = serverResults();
-  const featured = notablePlayers().slice(0, 6);
+  const topPlayers = [...allPlayers()].sort((a, b) => b.rating - a.rating || b.fame - a.fame).slice(0, 80);
   const liveRows = results.laddersBySeason[meta.liveSeason] ?? [];
 
   return (
     <div style={{ display: "grid", gap: "2.5rem" }}>
       {/* hero */}
       <section style={{ display: "grid", gap: "1rem" }}>
-        <span className="chip" style={{ width: "fit-content", color: "var(--gold)" }}>All-time MLB draft · live MLB Stats API</span>
+        <span className="chip" style={{ width: "fit-content", color: "var(--gold)" }}>All-time MLB draft · live MLB data</span>
         <h1 style={{ fontSize: "clamp(2.4rem, 7vw, 4rem)", margin: 0, lineHeight: 0.95, textTransform: "uppercase" }}>
           Build the perfect<br /><span style={{ color: "var(--accent)" }}>162–0</span> MLB season
         </h1>
@@ -78,32 +77,13 @@ export default function Home() {
       {/* current-season player stat leaders */}
       <LiveLeaders data={results.liveLeaders} />
 
-      {/* featured all-time players */}
+      {/* all-time players leaderboard */}
       <section>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
-          <h2 style={{ margin: 0 }}>All-time greats</h2>
-          <Link href="/players" style={{ fontSize: ".85rem", color: "var(--accent)" }}>All players →</Link>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+          <h2 style={{ margin: 0 }}>All-time player leaderboard</h2>
+          <Link href="/perfect" style={{ fontSize: ".85rem", color: "var(--accent)" }}>Full 162-0 leaderboard →</Link>
         </div>
-        <div className="grid-cards">
-          {featured.map((p) => {
-            const [c1] = teamColors(p.team);
-            const line = p.kind === "bat"
-              ? `${p.hr} HR · ${p.rbi} RBI · ${avg3(p.ops)} OPS`
-              : `${p.w} W · ${p.so} K · ${p.eraAvg.toFixed(2)} ERA`;
-            return (
-              <Link key={p.id} href={`/players/${p.id}/${p.slug}`} className="card" style={{ padding: "1rem", display: "grid", gap: 4 }}>
-                <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <strong>{p.name}</strong>
-                  <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.3rem", color: p.rating >= 90 ? "var(--gold)" : "var(--text)" }}>{p.rating}</span>
-                </span>
-                <span style={{ display: "flex", gap: 8, alignItems: "center", fontSize: ".8rem", color: "var(--muted)" }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 2, background: c1 }} />{p.team} · {p.posName}
-                </span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: ".7rem", color: "var(--muted)" }}>{line} · {p.firstYear}–{p.lastYear}</span>
-              </Link>
-            );
-          })}
-        </div>
+        <TopPlayersLeaderboard players={topPlayers} limit={10} />
       </section>
 
       {/* live standings — the real thing, clearly labelled, moved to the foot */}

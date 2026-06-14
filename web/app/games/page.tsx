@@ -26,7 +26,7 @@ export default function GamesHub() {
       <header>
         <h1 style={{ fontSize: "2.2rem", margin: 0, textTransform: "uppercase" }}>The games</h1>
         <p style={{ color: "var(--muted)", maxWidth: 620, marginTop: 6 }}>
-          Free baseball mini-games, all built on real MLB Stats API data. Daily puzzles,
+          Free baseball mini-games, all built on real MLB stats. Daily puzzles,
           endless streaks and the roster-builder simulator.
         </p>
       </header>

@@ -83,7 +83,7 @@ export default function StandingsView() {
       </div>
       <p style={{ fontSize: ".75rem", color: "var(--muted)" }}>
         Division leaders shaded. PCT = winning percentage, GB = games back, RS/RA = runs scored/allowed.
-        Official figures from the MLB Stats API. {" "}
+        Official figures from real MLB data. {" "}
         <Link href="/schedule" style={{ color: "var(--accent)" }}>See the schedule →</Link>
       </p>
     </div>

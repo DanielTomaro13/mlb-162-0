@@ -44,7 +44,7 @@ export default function TermsPage() {
 
       <Section title="Data accuracy">
         <p>
-          Statistics are derived from the public MLB Stats API and refreshed periodically. We strive
+          Statistics are derived from real MLB data and refreshed periodically. We strive
           for accuracy but make no warranty that data is complete, current or error-free. Spotted a
           mistake? Tell us via the{" "}
           <Link href="/contact" style={{ color: "var(--accent)" }}>Contact page</Link>.

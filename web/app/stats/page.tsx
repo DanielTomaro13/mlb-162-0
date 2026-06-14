@@ -4,7 +4,7 @@ import StatsBoards from "@/components/StatsBoards";
 
 export const metadata = pageMeta({
   title: "MLB Stat Leaders — home runs, RBIs, strikeouts & more",
-  description: "Career stat leaders across the dataset: home runs, RBIs, hits, stolen bases, OPS, wins, strikeouts, saves and ERA — for hitters and pitchers. Built from real MLB Stats API season data.",
+  description: "Career stat leaders across the dataset: home runs, RBIs, hits, stolen bases, OPS, wins, strikeouts, saves and ERA — for hitters and pitchers. Built from real MLB season data.",
   path: "/stats",
   keywords: ["MLB stats", "MLB home run leaders", "MLB strikeout leaders", "MLB stat leaders"],
 });

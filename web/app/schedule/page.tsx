@@ -6,7 +6,7 @@ export function generateMetadata() {
   const m = serverMeta();
   return pageMeta({
     title: `MLB Schedule & Scores — ${m.liveSeason}`,
-    description: `The ${m.liveSeason} MLB schedule and recent final scores, filterable by team. Updated daily from the official MLB Stats API.`,
+    description: `The ${m.liveSeason} MLB schedule and recent final scores, filterable by team. Updated daily from official MLB data.`,
     path: "/schedule",
     keywords: ["MLB schedule", "MLB scores", "baseball results", "MLB games today"],
   });

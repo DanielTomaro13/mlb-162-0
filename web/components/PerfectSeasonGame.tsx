@@ -27,6 +27,15 @@ import { AD_SLOTS } from "@/lib/ads";
 const rnd = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 const ORDER: Mode[] = ["quick", "classic", "full", "cap", "gauntlet", "spoon"];
 
+/** The decade (as a number, e.g. 2010) a season string belongs to. */
+const decadeOf = (era: string): number => Math.floor(Number(era) / 10) * 10;
+/** A decade's display label, e.g. 2010 → "2010s". */
+const decadeLabel = (d: number): string => `${d}s`;
+/** Parse a "2010s" reel value back to its numeric decade (2010). */
+const decadeFromLabel = (label: string): number => Number(label.replace(/s$/, ""));
+/** Decades mode reuses The Roster (13) shape so it includes pitchers. */
+const DECADES_MODE: Mode = "classic";
+
 /** A friendly UTC date label for the daily challenge, e.g. "Jun 15, 2026". */
 function dailyDateLabel(): string {
   const d = new Date();
@@ -57,6 +66,7 @@ export default function PerfectSeasonGame() {
 
   const [mode, setMode] = useState<Mode | null>(null);
   const [daily, setDaily] = useState(false); // daily challenge: fixed spin, no re-rolls
+  const [decades, setDecades] = useState(false); // decades mode: spin a team + a decade
   const [squad, setSquad] = useState<(PoolPlayer | null)[]>([]);
   const [reels, setReels] = useState<{ team: string | null; era: string | null }>({ team: null, era: null });
   const [spinning, setSpinning] = useState(false);
@@ -70,6 +80,7 @@ export default function PerfectSeasonGame() {
   const settleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSpin = useRef(false);
   const autoDaily = useRef(false);
+  const autoDecades = useRef(false);
   useEffect(() => () => {
     if (flickRef.current) clearInterval(flickRef.current);
     if (settleRef.current) clearTimeout(settleRef.current);
@@ -86,6 +97,8 @@ export default function PerfectSeasonGame() {
       const q = new URLSearchParams(window.location.search);
       if (q.get("daily")) {
         autoDaily.current = true; // entered once pool is ready (see effect below)
+      } else if (q.get("decades")) {
+        autoDecades.current = true; // entered once pool is ready (see effect below)
       } else if (q.get("quick")) {
         autoSpin.current = true;
         start("quick");
@@ -98,6 +111,10 @@ export default function PerfectSeasonGame() {
     if (autoDaily.current && pool && !mode) {
       autoDaily.current = false;
       startDaily();
+    }
+    if (autoDecades.current && pool && !mode) {
+      autoDecades.current = false;
+      startDecades();
     }
   }, [pool, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -116,10 +133,23 @@ export default function PerfectSeasonGame() {
 
   const candidates = useMemo(() => {
     if (!pool || !reels.team) return [];
+    if (decades) {
+      // Decades mode: everyone who wore this uniform in the spun decade, each
+      // player appearing ONCE via their best (highest-rated) season that decade.
+      if (!reels.era) return [];
+      const dec = decadeFromLabel(reels.era);
+      const best = new Map<number, PoolPlayer>(); // keyed by player id (pid)
+      for (const p of pool) {
+        if (p.team !== reels.team || decadeOf(p.era) !== dec || !undrafted(p)) continue;
+        const cur = best.get(p.pid);
+        if (!cur || p.rating > cur.rating) best.set(p.pid, p);
+      }
+      return Array.from(best.values()).sort((a, b) => b.rating - a.rating);
+    }
     return pool
       .filter((p) => p.team === reels.team && (!reels.era || p.era === reels.era) && undrafted(p))
       .sort((a, b) => (mode === "spoon" ? a.rating - b.rating : b.rating - a.rating));
-  }, [pool, reels, undrafted, mode]);
+  }, [pool, reels, undrafted, mode, decades]);
 
   const teamsWithPlayers = useCallback(() => {
     if (!pool) return [];
@@ -133,6 +163,34 @@ export default function PerfectSeasonGame() {
     if (!pool || !era) return [];
     return Array.from(new Set(pool.filter((p) => p.era === era && undrafted(p)).map((p) => p.team)));
   }, [pool, undrafted]);
+
+  // ---- Decades mode helpers ----
+  // Count distinct players (by pid) for a team within a decade — used to ensure
+  // a spun (team, decade) pair has enough bodies to fill The Roster (13).
+  const decadeRosterSize = SQUADS[DECADES_MODE].length;
+  // All (team, decade) pairs deep enough to draft a full roster from.
+  const decadePairs = useCallback((): { team: string; dec: number }[] => {
+    if (!pool) return [];
+    const counts = new Map<string, Set<number>>();
+    for (const p of pool) {
+      const key = `${p.team}@@${decadeOf(p.era)}`;
+      let s = counts.get(key);
+      if (!s) { s = new Set<number>(); counts.set(key, s); }
+      s.add(p.pid);
+    }
+    const out: { team: string; dec: number }[] = [];
+    counts.forEach((s, key) => {
+      if (s.size >= decadeRosterSize) {
+        const [team, dec] = key.split("@@");
+        out.push({ team, dec: Number(dec) });
+      }
+    });
+    return out;
+  }, [pool, decadeRosterSize]);
+  // Decades available for a given team (those with enough players).
+  const decadesForTeam = useCallback((team: string): number[] => {
+    return decadePairs().filter((p) => p.team === team).map((p) => p.dec).sort((a, b) => a - b);
+  }, [decadePairs]);
 
   const animateTo = useCallback((target: { team: string; era: string | null }, lock: { team?: boolean; era?: boolean } = {}) => {
     if (spinningRef.current) return;
@@ -159,16 +217,28 @@ export default function PerfectSeasonGame() {
       const ft = lock.team ? target.team : rnd(allTeams.length ? allTeams : [target.team]);
       let fe: string | null;
       if (lock.era) fe = target.era;
-      else { const es = erasForTeam(ft); fe = es.length ? rnd(es) : null; }
+      else if (decades) {
+        // flick through this team's decade labels (e.g. "2010s")
+        const ds = decadesForTeam(ft);
+        fe = ds.length ? decadeLabel(rnd(ds)) : target.era;
+      } else { const es = erasForTeam(ft); fe = es.length ? rnd(es) : null; }
       setReels({ team: ft, era: fe });
       if (ticks >= max) finalize();
     }, 70);
     // backstop: always settle within 2.5s even if the interval is throttled
     settleRef.current = setTimeout(finalize, 2500);
-  }, [teamsWithPlayers, erasForTeam]);
+  }, [teamsWithPlayers, erasForTeam, decades, decadesForTeam]);
 
   function spinFresh() {
     if (daily || !pool || spinningRef.current || done) return;
+    if (decades) {
+      // Spin a franchise + a decade deep enough to fill The Roster (13).
+      const pairs = decadePairs();
+      if (!pairs.length) return;
+      const pick = rnd(pairs);
+      animateTo({ team: pick.team, era: decadeLabel(pick.dec) });
+      return;
+    }
     const ts = teamsWithPlayers();
     if (!ts.length) return;
     const team = rnd(ts);
@@ -177,6 +247,17 @@ export default function PerfectSeasonGame() {
   }
   function rerollTeam() {
     if (daily || !pool || spinningRef.current || done || rerolls.team >= maxReroll.team || !reels.team) return;
+    if (decades) {
+      // keep the decade, swap to another franchise that has a full roster then.
+      const dec = reels.era ? decadeFromLabel(reels.era) : null;
+      const sameDec = dec === null ? [] : decadePairs().filter((p) => p.dec === dec && p.team !== reels.team).map((p) => p.team);
+      setRerolls((r) => ({ ...r, team: r.team + 1 }));
+      if (sameDec.length && reels.era) { animateTo({ team: rnd(sameDec), era: reels.era }, { era: true }); return; }
+      const pairs = decadePairs().filter((p) => p.team !== reels.team);
+      const pick = rnd(pairs.length ? pairs : decadePairs());
+      animateTo({ team: pick.team, era: decadeLabel(pick.dec) });
+      return;
+    }
     const sameEra = teamsForEra(reels.era).filter((c) => c !== reels.team);
     setRerolls((r) => ({ ...r, team: r.team + 1 }));
     if (sameEra.length) { animateTo({ team: rnd(sameEra), era: reels.era }, { era: true }); return; }
@@ -188,6 +269,15 @@ export default function PerfectSeasonGame() {
   }
   function rerollEra() {
     if (daily || !pool || spinningRef.current || done || rerolls.era >= maxReroll.era || !reels.team) return;
+    if (decades) {
+      // keep the team, swap to another of its decades with a full roster.
+      const dec = reels.era ? decadeFromLabel(reels.era) : null;
+      const others = decadesForTeam(reels.team).filter((d) => d !== dec);
+      if (!others.length) return;
+      setRerolls((r) => ({ ...r, era: r.era + 1 }));
+      animateTo({ team: reels.team, era: decadeLabel(rnd(others)) }, { team: true });
+      return;
+    }
     const es = erasForTeam(reels.team).filter((e) => e !== reels.era);
     if (!es.length) return;
     setRerolls((r) => ({ ...r, era: r.era + 1 }));
@@ -231,12 +321,26 @@ export default function PerfectSeasonGame() {
 
   function start(m: Mode) {
     setDaily(false);
+    setDecades(false);
     setMode(m);
     setSquad(SQUADS[m].map(() => null));
     setReels({ team: null, era: null });
     setRerolls({ team: 0, era: 0 });
     setNotice(null);
     setPendingPick(null);
+  }
+
+  /** Enter Decades mode: spin a franchise + a decade, draft The Roster (13). */
+  function startDecades() {
+    setDaily(false);
+    setDecades(true);
+    setMode(DECADES_MODE);
+    setSquad(SQUADS[DECADES_MODE].map(() => null));
+    setReels({ team: null, era: null });
+    setRerolls({ team: 0, era: 0 });
+    setNotice(null);
+    setPendingPick(null);
+    setPosFilter("All");
   }
 
   /** The fixed daily team + era. Deterministic from rng(dailySeed("play")) so
@@ -261,17 +365,29 @@ export default function PerfectSeasonGame() {
     return { team, era };
   }, [pool]);
 
-  /** Enter the daily challenge: always Starting Nine, fixed spin, no re-rolls. */
+  /** Enter the daily challenge: always Starting Nine, fixed spin, no re-rolls.
+   *  The reels start empty so the player has a "Reveal today's team" button to
+   *  click — the reveal spin then deterministically lands on the fixed draw. */
   function startDaily() {
     setDaily(true);
+    setDecades(false);
     setMode("quick");
     setSquad(SQUADS.quick.map(() => null));
     setRerolls({ team: 0, era: 0 });
     setNotice(null);
     setPendingPick(null);
     setPosFilter("All");
+    setReels({ team: null, era: null });
+  }
+
+  /** The daily "reveal" spin: runs the normal reel animation but always lands on
+   *  the deterministic daily draw (locked on both reels), so every visitor sees
+   *  the same result — it's a reveal, not a randomiser. */
+  function revealDaily() {
+    if (!daily || !pool || spinningRef.current || done) return;
     const draw = dailyDraw();
-    setReels(draw ? { team: draw.team, era: draw.era } : { team: null, era: null });
+    if (!draw) return;
+    animateTo({ team: draw.team, era: draw.era }, { team: true, era: true });
   }
   function reset() {
     if (!mode) return;
@@ -279,13 +395,9 @@ export default function PerfectSeasonGame() {
     setRerolls({ team: 0, era: 0 });
     setNotice(null);
     setPendingPick(null);
-    if (daily) {
-      // re-drafting the daily challenge keeps the same fixed draw
-      const draw = dailyDraw();
-      setReels(draw ? { team: draw.team, era: draw.era } : { team: null, era: null });
-    } else {
-      setReels({ team: null, era: null });
-    }
+    // Daily and Decades both re-spin from scratch (daily re-reveals the same
+    // fixed draw; decades clears the reels for a fresh spin).
+    setReels({ team: null, era: null });
   }
 
   // positions that still have an open slot (for highlighting the filters)
@@ -365,6 +477,27 @@ export default function PerfectSeasonGame() {
           <span className="chip" style={{ color: "var(--accent-2)", whiteSpace: "nowrap" }}>Play today →</span>
         </button>
 
+        {/* Decades — spin a franchise + a decade, draft the best of everyone who
+            wore that uniform across those ten years. */}
+        <button onClick={startDecades} className="card"
+          style={{ padding: "1.15rem 1.25rem", textAlign: "left", cursor: "pointer", color: "var(--text)",
+            display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
+            border: "1.5px solid var(--gold)", background: "linear-gradient(135deg, rgba(232,196,105,0.14), rgba(55,194,129,0.08))" }}>
+          <span style={{ fontSize: "2.2rem", lineHeight: 1 }} aria-hidden>🕰️</span>
+          <span style={{ display: "grid", gap: 4, flex: 1, minWidth: 200 }}>
+            <span style={{ fontSize: ".7rem", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--gold)" }}>
+              Time machine
+            </span>
+            <strong style={{ fontFamily: "var(--font-cond)", fontSize: "1.45rem", textTransform: "uppercase" }}>
+              Decades
+            </strong>
+            <span style={{ fontSize: ".85rem", color: "var(--muted)", lineHeight: 1.45 }}>
+              Spin a franchise and a decade, then draft the best of everyone who wore that uniform in those ten years.
+            </span>
+          </span>
+          <span className="chip" style={{ color: "var(--gold)", whiteSpace: "nowrap" }}>Spin a decade →</span>
+        </button>
+
         <div className="grid-cards">
           {ORDER.map((m) => {
             const info = MODE_INFO[m];
@@ -398,7 +531,7 @@ export default function PerfectSeasonGame() {
                   style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: 2 }}>
                   {muted ? "🔇" : "🔊"}
                 </button>
-                <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.2rem", textTransform: "uppercase", color: "var(--gold)" }}>{daily ? "Daily Challenge" : MODE_INFO[mode].name}</span>
+                <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.2rem", textTransform: "uppercase", color: "var(--gold)" }}>{daily ? "Daily Challenge" : decades ? "Decades" : MODE_INFO[mode].name}</span>
               </div>
             </div>
 
@@ -416,10 +549,19 @@ export default function PerfectSeasonGame() {
 
             <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
               <Reel label="Team" value={reels.team} spinning={spinning} big />
-              <Reel label="Season" value={reels.era} spinning={spinning} />
+              <Reel label={decades ? "Decade" : "Season"} value={reels.era} spinning={spinning} />
             </div>
 
-            {daily ? null : (!reels.team || spinning) ? (
+            {daily ? (
+              // Daily reveal: a spin button that always lands on today's fixed
+              // draw. Once revealed, the reels lock and drafting proceeds (no
+              // re-rolls). While spinning, keep the button disabled.
+              (!reels.team || spinning) ? (
+                <button className="btn btn-primary" style={{ width: "100%" }} onClick={revealDaily} disabled={spinning}>
+                  {spinning ? "Revealing…" : "🎲 Reveal today's team"}
+                </button>
+              ) : null
+            ) : (!reels.team || spinning) ? (
               <button className="btn btn-primary" style={{ width: "100%" }} onClick={spinFresh} disabled={spinning}>
                 {spinning ? "Spinning…" : "Spin"}
               </button>
@@ -428,8 +570,8 @@ export default function PerfectSeasonGame() {
                 <button className="btn" style={{ flex: 1 }} onClick={rerollTeam} disabled={rerolls.team >= maxReroll.team}>
                   ↻ Team{rerolls.team >= maxReroll.team ? " · used" : ` (${maxReroll.team - rerolls.team})`}
                 </button>
-                <button className="btn" style={{ flex: 1 }} onClick={rerollEra} disabled={rerolls.era >= maxReroll.era || erasForTeam(reels.team).length <= 1}>
-                  ↻ Season{rerolls.era >= maxReroll.era ? " · used" : ` (${maxReroll.era - rerolls.era})`}
+                <button className="btn" style={{ flex: 1 }} onClick={rerollEra} disabled={rerolls.era >= maxReroll.era || (decades ? decadesForTeam(reels.team).length <= 1 : erasForTeam(reels.team).length <= 1)}>
+                  ↻ {decades ? "Decade" : "Season"}{rerolls.era >= maxReroll.era ? " · used" : ` (${maxReroll.era - rerolls.era})`}
                 </button>
               </div>
             )}
@@ -533,7 +675,7 @@ export default function PerfectSeasonGame() {
             )}
           </>
         ) : (
-          <ResultView mode={mode} daily={daily} squad={filled} avg={avg} strengths={strengths} onReset={reset} onMode={() => setMode(null)} />
+          <ResultView mode={mode} daily={daily} decades={decades} squad={filled} avg={avg} strengths={strengths} onReset={reset} onMode={() => setMode(null)} />
         )}
       </section>
 
@@ -612,8 +754,8 @@ function Reel({ label, value, spinning, big }: { label: string; value: string | 
   );
 }
 
-function ResultView({ mode, daily, squad, avg, strengths, onReset, onMode }: {
-  mode: Mode; daily?: boolean; squad: PoolPlayer[]; avg: number; strengths: Record<string, number[]>;
+function ResultView({ mode, daily, decades, squad, avg, strengths, onReset, onMode }: {
+  mode: Mode; daily?: boolean; decades?: boolean; squad: PoolPlayer[]; avg: number; strengths: Record<string, number[]>;
   onReset: () => void; onMode: () => void;
 }) {
   const [name, setNm] = useState("");
@@ -637,8 +779,9 @@ function ResultView({ mode, daily, squad, avg, strengths, onReset, onMode }: {
   function save() {
     if (name.trim()) setName(name.trim());
     const score = mode === "spoon" ? 162 - rec.wins : rec.wins;
-    // Always post to the per-mode board.
-    submitScore(`perfect-${mode}`, score, true);
+    // Always post to the per-mode board. Decades has its own board (it reuses the
+    // "classic" roster shape but is a distinct mode).
+    submitScore(decades ? "perfect-decades" : `perfect-${mode}`, score, true);
     // Feed the shared daily board (shown on the home page). The Daily Challenge
     // is the headline contributor — everyone drafts the same fixed nine — but a
     // normal run also lands here so the board is never empty. Daily Challenge
@@ -696,7 +839,7 @@ function ResultView({ mode, daily, squad, avg, strengths, onReset, onMode }: {
             record: `${rec.wins}–${rec.losses}`,
             verdict: v.t,
             avg,
-            modeName: MODE_INFO[mode].name,
+            modeName: decades ? "Decades" : MODE_INFO[mode].name,
             players: squad.map((p) => ({ n: p.name, pos: p.pos, team: p.team, era: p.era, rating: p.rating })),
           }}
           caption={`I built a ${rec.wins}–${rec.losses} all-time MLB roster (${v.t}) in MLB 162-0!`}

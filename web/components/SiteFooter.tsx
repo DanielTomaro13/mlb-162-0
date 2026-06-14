@@ -61,8 +61,8 @@ export default function SiteFooter() {
       </div>
       <div className="container-x" style={{ marginTop: "1.5rem", fontSize: ".78rem", opacity: 0.7 }}>
         © {new Date().getFullYear()} {SITE.name}. Unofficial. Not affiliated with Major League
-        Baseball, the MLBPA or any club. Player ratings derived from real MLB Stats API season
-        data for entertainment use.
+        Baseball, the MLBPA or any club. Player ratings derived from real MLB season
+        statistics for entertainment use.
       </div>
     </footer>
   );
