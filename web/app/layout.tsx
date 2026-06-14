@@ -9,7 +9,8 @@ import AdUnit from "@/components/AdUnit";
 import { AD_CLIENT, AD_SLOTS } from "@/lib/ads";
 import { SITE } from "@/lib/seo";
 
-const CF_BEACON = process.env.NEXT_PUBLIC_CF_BEACON;
+// Cloudflare Web Analytics beacon token (override via env if it ever rotates).
+const CF_BEACON = process.env.NEXT_PUBLIC_CF_BEACON || "101d1d9b889a4cba9278715eafa65982";
 
 export const viewport: Viewport = {
   width: "device-width",
