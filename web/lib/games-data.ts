@@ -65,6 +65,19 @@ export async function loadGamesData(): Promise<GamesData> {
   return _cache!;
 }
 
+/** A player with a URL slug — the client equivalent of playerdb's ProfilePlayer.
+ *  Browsers load this client-side from the cached games.json instead of having
+ *  the whole 11k-player list serialized into the page HTML. */
+export type ClientPlayer = GamePlayer & { slug: string };
+let _players: ClientPlayer[] | null = null;
+export async function loadPlayers(): Promise<ClientPlayer[]> {
+  if (_players) return _players;
+  const { slugify } = await import("@/lib/format");
+  const d = await loadGamesData();
+  _players = d.players.map((p) => ({ ...p, slug: slugify(p.name) }));
+  return _players;
+}
+
 /** Deterministic daily seed so "today's" puzzles are the same for everyone. */
 export function dailySeed(salt = ""): number {
   const d = new Date();

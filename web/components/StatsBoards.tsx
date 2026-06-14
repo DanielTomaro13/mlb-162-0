@@ -1,9 +1,11 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ProfilePlayer } from "@/lib/playerdb";
+import { loadPlayers, type ClientPlayer } from "@/lib/games-data";
 import { teamColors } from "@/lib/teams";
 import { avg3 } from "@/lib/format";
+
+type ProfilePlayer = ClientPlayer;
 
 type Board = { key: keyof ProfilePlayer; label: string; fmt?: (n: number) => string; asc?: boolean };
 
@@ -26,7 +28,9 @@ const PIT_BOARDS: Board[] = [
   { key: "rating", label: "Top Rated" },
 ];
 
-export default function StatsBoards({ players }: { players: ProfilePlayer[] }) {
+export default function StatsBoards() {
+  const [players, setPlayers] = useState<ProfilePlayer[]>([]);
+  useEffect(() => { loadPlayers().then(setPlayers); }, []);
   const [kind, setKind] = useState<"bat" | "pit">("bat");
   const [team, setTeam] = useState("All teams");
   const teams = useMemo(() => ["All teams", ...Array.from(new Set(players.map((p) => p.team))).sort()], [players]);

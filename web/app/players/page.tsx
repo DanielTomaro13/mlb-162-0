@@ -10,14 +10,16 @@ export const metadata = pageMeta({
 });
 
 export default function PlayersPage() {
-  const players = allPlayers().sort((a, b) => b.fame - a.fame);
+  // Only the COUNT is read server-side (a number) — the full list loads
+  // client-side from the cached games.json, not serialized into this page.
+  const count = allPlayers().length;
   return (
     <div style={{ display: "grid", gap: "1rem" }}>
       <header>
         <h1 style={{ fontSize: "2rem", margin: 0, textTransform: "uppercase" }}>Players</h1>
-        <p style={{ color: "var(--muted)", marginTop: 6 }}>{players.length} players, ranked and rated from real MLB season stats.</p>
+        <p style={{ color: "var(--muted)", marginTop: 6 }}>{count.toLocaleString()} players, ranked and rated from real MLB season stats.</p>
       </header>
-      <PlayersBrowser players={players} />
+      <PlayersBrowser />
     </div>
   );
 }

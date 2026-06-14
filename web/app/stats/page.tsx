@@ -1,5 +1,4 @@
 import { pageMeta } from "@/lib/seo";
-import { allPlayers } from "@/lib/playerdb";
 import StatsBoards from "@/components/StatsBoards";
 
 export const metadata = pageMeta({
@@ -10,14 +9,13 @@ export const metadata = pageMeta({
 });
 
 export default function StatsPage() {
-  const players = allPlayers();
   return (
     <div style={{ display: "grid", gap: "1.5rem" }}>
       <header>
         <h1 style={{ fontSize: "2rem", margin: 0, textTransform: "uppercase" }}>Stat Leaders</h1>
         <p style={{ color: "var(--muted)", marginTop: 6 }}>Career leaders across the dataset, from real MLB season data. Switch between hitters and pitchers.</p>
       </header>
-      <StatsBoards players={players} />
+      <StatsBoards />
     </div>
   );
 }

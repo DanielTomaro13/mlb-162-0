@@ -1,9 +1,11 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ProfilePlayer } from "@/lib/playerdb";
+import { loadPlayers, type ClientPlayer } from "@/lib/games-data";
 import { teamColors } from "@/lib/teams";
 import { avg3, POS_GROUP } from "@/lib/format";
+
+type ProfilePlayer = ClientPlayer;
 
 const FILTERS = ["All", "Hitters", "Pitchers"];
 const POSITIONS = ["All", "Infield", "Outfield", "DH", "Pitcher"];
@@ -45,7 +47,10 @@ function statLine(p: ProfilePlayer): string {
     : `${p.posName} · ${p.w} W · ${p.so} K · ${p.eraAvg.toFixed(2)} ERA`;
 }
 
-export default function PlayersBrowser({ players }: { players: ProfilePlayer[] }) {
+export default function PlayersBrowser() {
+  const [players, setPlayers] = useState<ProfilePlayer[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { loadPlayers().then((p) => { setPlayers(p); setLoading(false); }); }, []);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("All");
   const [pos, setPos] = useState("All");
@@ -111,7 +116,8 @@ export default function PlayersBrowser({ players }: { players: ProfilePlayer[] }
           );
         })}
       </div>
-      {shown.length === 0 && <p style={{ color: "var(--muted)" }}>No players match.</p>}
+      {loading && <p style={{ color: "var(--muted)" }}>Loading players…</p>}
+      {!loading && shown.length === 0 && <p style={{ color: "var(--muted)" }}>No players match.</p>}
     </div>
   );
 }

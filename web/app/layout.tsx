@@ -88,6 +88,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en-US">
       <body>
+        {/* Resource hints — warm up the ad + analytics origins so the first ad
+            and beacon resolve faster (better LCP/ad fill, no layout impact). */}
+        <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://googleads.g.doubleclick.net" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+        <link rel="dns-prefetch" href="https://tpc.googlesyndication.com" />
         <SisterSites active="mlb" />
         <SiteHeader />
         <main className="container-x" style={{ paddingTop: "1.5rem", minHeight: "60vh" }}>
