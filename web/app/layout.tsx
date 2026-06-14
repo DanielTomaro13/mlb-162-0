@@ -55,6 +55,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   manifest: "/manifest.webmanifest",
+  // AdSense site verification — emits <meta name="google-adsense-account"> into
+  // the static <head>, which the AdSense crawler checks for.
+  other: { "google-adsense-account": AD_CLIENT },
 };
 
 const orgLd = {
@@ -96,13 +99,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteFooter />
         <JsonLd data={orgLd} />
         <JsonLd data={appLd} />
-        {/* Google AdSense loader — enables Auto Ads + the manual units above */}
-        <Script
-          id="adsbygoogle-init"
+        {/* Google AdSense loader — a raw <script> so React 19 hoists it into the
+            static <head> exactly as AdSense's snippet/crawler expects (the
+            afterInteractive variant was injected post-hydration and missed by the
+            verification crawler). Enables Auto Ads + the manual units above. */}
+        <script
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}`}
           crossOrigin="anonymous"
-          strategy="afterInteractive"
         />
         {/* Cloudflare Web Analytics — privacy-friendly, no cookies. Only emitted
             once a real beacon token is provided via NEXT_PUBLIC_CF_BEACON, so we
