@@ -1,0 +1,16 @@
+{
+  "name": "mlb-162-0",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Build an all-time MLB roster across franchises and eras and chase a perfect 162-0 season — plus a vault of baseball mini-games, standings, stat leaders and player profiles.",
+  "workspaces": [
+    "pipeline",
+    "web"
+  ],
+  "scripts": {
+    "data": "npm run build -w pipeline",
+    "dev": "npm run dev -w web",
+    "build": "npm run build -w web",
+    "start": "npm run start -w web"
+  }
+}

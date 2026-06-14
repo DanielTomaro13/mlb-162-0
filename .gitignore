@@ -1,0 +1,12 @@
+node_modules/
+.next/
+web/.next/
+web/out/
+out/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.local
+.wrangler/
+.playwright-mcp/
+data.sqlite
