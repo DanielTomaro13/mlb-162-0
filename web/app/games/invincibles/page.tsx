@@ -20,7 +20,7 @@ export default function Page() {
         "Spin for a random franchise and season, then draft a player into each spot.",
         "Fill the lineup and rotation to complete your roster.",
         "Hit simulate to run thousands of 162-game seasons.",
-        "Only a near-perfect roster has a ~5% shot at 162–0 — post it to the Hall of Fame.",
+        "A flawless 162–0 is brutally hard — only the very best rosters get there. Post yours to the Hall of Fame.",
       ]}
     >
       <InvinciblesGame />

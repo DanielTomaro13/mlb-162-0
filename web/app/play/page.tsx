@@ -19,8 +19,8 @@ export default function PlayPage() {
         <p style={{ color: "var(--muted)", marginTop: 6, maxWidth: 640 }}>
           Spin for an MLB franchise and era, draft a legend into every spot in the lineup and
           rotation, and chase a flawless 162–0 season. Six modes — Starting Nine, The Roster,
-          Active 18, Salary Cap, The Gauntlet and Cellar Dwellers — with a Monte-Carlo season
-          simulator tuned so only a near-perfect roster has a ~5% shot at 162–0.
+          Active 18, Salary Cap, The Gauntlet and Cellar Dwellers — with a full-season simulator where
+          a flawless 162–0 is reserved for only the very best rosters you can build.
         </p>
       </header>
       <PerfectSeasonGame />

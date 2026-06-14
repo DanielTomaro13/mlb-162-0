@@ -43,22 +43,21 @@ export default function AboutPage() {
       <section style={{ display: "grid", gap: 10 }}>
         <h2 style={{ margin: 0 }}>The ratings</h2>
         <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
-          Every player-season is scored on a 60–99 scale. Hitters are rated primarily on{" "}
-          <strong>OPS</strong> (on-base plus slugging), nudged up by power and speed volume.
-          Pitchers blend <strong>ERA</strong>, <strong>WHIP</strong> and strikeout rate. A player&apos;s
-          eligible positions come from where they actually played: outfielders are interchangeable
-          across the grass, any hitter can DH, and pitchers are split into starters, relievers and
-          closers by their real workload.
+          Every player is given an overall rating that reflects how they actually performed —
+          hitters for their bat, pitchers for keeping runs off the board. Each player can be drafted
+          at the positions they really played, with outfielders interchangeable across the grass, any
+          hitter able to slot in at DH, and pitchers split into starters, relievers and closers by
+          their real roles. Think of the numbers as a fun, opinionated ranking — not official stats.
         </p>
       </section>
 
       <section style={{ display: "grid", gap: 10 }}>
         <h2 style={{ margin: 0 }}>The simulator</h2>
         <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>
-          When you draft a roster, its average rating sets a per-game win probability, and we play out
-          all 162 games. The curve is capped so even the best roster you can assemble tops out around a
-          122–40 record — and a perfect 162–0 stays the essentially-impossible miracle it is in real
-          life. The <em>Cellar Dwellers</em> mode is the mirror image: chase a winless 0–162.
+          Draft a roster and we play out a full 162-game season for it. The stronger your side, the
+          more it wins — but a flawless 162–0 is deliberately brutal to reach, just like the real
+          thing, so it stays a badge of honour for only the very best rosters. The{" "}
+          <em>Cellar Dwellers</em> mode is the mirror image: chase a winless 0–162.
         </p>
       </section>
 
