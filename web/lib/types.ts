@@ -15,24 +15,33 @@ export interface PoolPlayer {
   rating: number;
   g: number;
   // hitters
+  pa?: number;
   hr?: number;
   rbi?: number;
   runs?: number;
   hits?: number;
   sb?: number;
+  db?: number;       // doubles
+  tp?: number;       // triples
+  bb?: number;       // walks (pitchers carry this too)
+  so?: number;       // strikeouts (batter K's; for pitchers, K's recorded)
+  tb?: number;       // total bases
   avg?: number;
   obp?: number;
   slg?: number;
   ops?: number;
   // pitchers
+  gs?: number;       // games started
   w?: number;
   l?: number;
   sv?: number;
   eraAvg?: number;   // earned run average
   whip?: number;
-  so?: number;
   ip?: number;
   k9?: number;
+  hra?: number;      // home runs allowed
+  sho?: number;      // shutouts
+  cg?: number;       // complete games
 }
 
 export interface Meta {

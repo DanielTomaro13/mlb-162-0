@@ -64,7 +64,9 @@ export default function AboutPage() {
       <p style={{ fontSize: ".82rem", color: "var(--muted)" }}>
         Explore the rest of the 0 Series:{" "}
         <a href="https://afl23-0.com" style={{ color: "var(--accent)" }}>AFL 23-0</a>,{" "}
-        <a href="https://nrl24-0.com" style={{ color: "var(--accent)" }}>NRL 24-0</a> and{" "}
+        <a href="https://nrl24-0.com" style={{ color: "var(--accent)" }}>NRL 24-0</a>,{" "}
+        <a href="https://nba82-0.com" style={{ color: "var(--accent)" }}>NBA 82-0</a>,{" "}
+        <a href="https://f1slam.com" style={{ color: "var(--accent)" }}>F1 Slam</a> and{" "}
         <a href="https://footballinvincibles.com" style={{ color: "var(--accent)" }}>Football Invincibles</a>.
         {" "}<Link href="/play" style={{ color: "var(--accent)" }}>Or build your roster →</Link>
       </p>

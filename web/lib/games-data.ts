@@ -23,12 +23,18 @@ export interface GamePlayer {
   runs: number;
   hits: number;
   sb: number;
+  db: number;        // doubles
+  tp: number;        // triples
+  bb: number;        // walks drawn
+  soBat: number;     // strikeouts (as a batter)
   ops: number;
   // pitchers (career totals + rate)
   w: number;
+  l: number;
   sv: number;
   so: number;
   ip: number;
+  bbPit: number;     // walks issued
   eraAvg: number;
 }
 

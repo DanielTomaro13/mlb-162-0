@@ -12,6 +12,8 @@ const BAT_BOARDS: Board[] = [
   { key: "rbi", label: "Runs Batted In" },
   { key: "hits", label: "Hits" },
   { key: "runs", label: "Runs Scored" },
+  { key: "db", label: "Doubles" },
+  { key: "bb", label: "Walks" },
   { key: "sb", label: "Stolen Bases" },
   { key: "ops", label: "On-base Plus Slugging", fmt: avg3 },
 ];
@@ -26,18 +28,27 @@ const PIT_BOARDS: Board[] = [
 
 export default function StatsBoards({ players }: { players: ProfilePlayer[] }) {
   const [kind, setKind] = useState<"bat" | "pit">("bat");
-  const pool = useMemo(() => players.filter((p) => p.kind === kind), [players, kind]);
+  const [team, setTeam] = useState("All teams");
+  const teams = useMemo(() => ["All teams", ...Array.from(new Set(players.map((p) => p.team))).sort()], [players]);
+  const pool = useMemo(
+    () => players.filter((p) => p.kind === kind && (team === "All teams" || p.team === team)),
+    [players, kind, team]
+  );
   const boards = kind === "bat" ? BAT_BOARDS : PIT_BOARDS;
 
   return (
     <div style={{ display: "grid", gap: "1.25rem" }}>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
         {(["bat", "pit"] as const).map((k) => (
           <button key={k} onClick={() => setKind(k)} className="chip"
             style={{ cursor: "pointer", borderColor: kind === k ? "var(--accent)" : "var(--border)", color: kind === k ? "var(--text)" : "var(--muted)" }}>
             {k === "bat" ? "Hitters" : "Pitchers"}
           </button>
         ))}
+        <select value={team} onChange={(e) => setTeam(e.target.value)}
+          style={{ marginLeft: "auto", padding: ".4rem .6rem", borderRadius: 999, border: "1px solid var(--border)", background: "var(--panel-2)", color: "var(--text)", fontSize: ".8rem" }}>
+          {teams.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
       </div>
       <div className="grid-cards" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))" }}>
         {boards.map((b) => {

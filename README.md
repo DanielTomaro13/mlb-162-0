@@ -3,7 +3,7 @@
 > MLB stats, standings & addictive baseball mini-games. Build an all-time roster and chase a perfect 162-0 season.
 > Live at **[mlb162-0.com](https://mlb162-0.com)**.
 
-The baseball entry in the **0 Series**, alongside [AFL 23-0](https://afl23-0.com), [NRL 24-0](https://nrl24-0.com) and [Football Invincibles](https://footballinvincibles.com).
+The baseball entry in the **0 Series**, alongside [AFL 23-0](https://afl23-0.com), [NRL 24-0](https://nrl24-0.com), [NBA 82-0](https://nba82-0.com), [F1 Slam](https://f1slam.com) and [Football Invincibles](https://footballinvincibles.com).
 
 ## What's inside
 

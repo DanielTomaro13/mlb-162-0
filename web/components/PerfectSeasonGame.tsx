@@ -17,13 +17,23 @@ import { teamColors } from "@/lib/teams";
 import { submitScore } from "@/lib/leaderboard";
 import { getName, setName, todayKey } from "@/lib/progress";
 import { tick, settle, fanfare, isMuted, toggleMuted } from "@/lib/sound";
+import { dailySeed, rng } from "@/lib/games-data";
 import Confetti from "@/components/Confetti";
 import ShareButtons from "@/components/ShareButtons";
 import AdUnit from "@/components/AdUnit";
+import DiamondField from "@/components/DiamondField";
 import { AD_SLOTS } from "@/lib/ads";
 
 const rnd = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 const ORDER: Mode[] = ["quick", "classic", "full", "cap", "gauntlet", "spoon"];
+
+/** A friendly UTC date label for the daily challenge, e.g. "Jun 15, 2026". */
+function dailyDateLabel(): string {
+  const d = new Date();
+  return d.toLocaleDateString("en-US", {
+    timeZone: "UTC", month: "short", day: "numeric", year: "numeric",
+  });
+}
 
 /** A kind-aware one-line stat line for a drafted player. Hitters lead with the
  *  power/average story; pitchers with wins, ERA and strikeouts. Every field is
@@ -46,6 +56,7 @@ export default function PerfectSeasonGame() {
   const [err, setErr] = useState<string | null>(null);
 
   const [mode, setMode] = useState<Mode | null>(null);
+  const [daily, setDaily] = useState(false); // daily challenge: fixed spin, no re-rolls
   const [squad, setSquad] = useState<(PoolPlayer | null)[]>([]);
   const [reels, setReels] = useState<{ team: string | null; era: string | null }>({ team: null, era: null });
   const [spinning, setSpinning] = useState(false);
@@ -58,6 +69,7 @@ export default function PerfectSeasonGame() {
   const flickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const settleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSpin = useRef(false);
+  const autoDaily = useRef(false);
   useEffect(() => () => {
     if (flickRef.current) clearInterval(flickRef.current);
     if (settleRef.current) clearTimeout(settleRef.current);
@@ -68,12 +80,26 @@ export default function PerfectSeasonGame() {
       .then(([p, , s]) => { setPool(p); setStrengths(s.bySeason); })
       .catch(() => setErr("Couldn't load the player pool. Try refreshing."));
     setMuted(isMuted());
-    // Starting Nine shortcut: /play?quick=1 jumps straight in and auto-spins.
-    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("quick")) {
-      autoSpin.current = true;
-      start("quick");
+    // URL shortcuts. /play?daily=1 → the shared daily challenge (fixed draw);
+    // /play?quick=1 → Starting Nine, auto-spun. Daily takes precedence.
+    if (typeof window !== "undefined") {
+      const q = new URLSearchParams(window.location.search);
+      if (q.get("daily")) {
+        autoDaily.current = true; // entered once pool is ready (see effect below)
+      } else if (q.get("quick")) {
+        autoSpin.current = true;
+        start("quick");
+      }
     }
   }, []);
+
+  // Enter the daily challenge once the pool has loaded (deep-link /play?daily=1).
+  useEffect(() => {
+    if (autoDaily.current && pool && !mode) {
+      autoDaily.current = false;
+      startDaily();
+    }
+  }, [pool, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const slots = mode ? SQUADS[mode] : [];
   const total = slots.length;
@@ -142,7 +168,7 @@ export default function PerfectSeasonGame() {
   }, [teamsWithPlayers, erasForTeam]);
 
   function spinFresh() {
-    if (!pool || spinningRef.current || done) return;
+    if (daily || !pool || spinningRef.current || done) return;
     const ts = teamsWithPlayers();
     if (!ts.length) return;
     const team = rnd(ts);
@@ -150,7 +176,7 @@ export default function PerfectSeasonGame() {
     animateTo({ team, era: es.length ? rnd(es) : null });
   }
   function rerollTeam() {
-    if (!pool || spinningRef.current || done || rerolls.team >= maxReroll.team || !reels.team) return;
+    if (daily || !pool || spinningRef.current || done || rerolls.team >= maxReroll.team || !reels.team) return;
     const sameEra = teamsForEra(reels.era).filter((c) => c !== reels.team);
     setRerolls((r) => ({ ...r, team: r.team + 1 }));
     if (sameEra.length) { animateTo({ team: rnd(sameEra), era: reels.era }, { era: true }); return; }
@@ -161,7 +187,7 @@ export default function PerfectSeasonGame() {
     animateTo({ team, era: es.length ? rnd(es) : null });
   }
   function rerollEra() {
-    if (!pool || spinningRef.current || done || rerolls.era >= maxReroll.era || !reels.team) return;
+    if (daily || !pool || spinningRef.current || done || rerolls.era >= maxReroll.era || !reels.team) return;
     const es = erasForTeam(reels.team).filter((e) => e !== reels.era);
     if (!es.length) return;
     setRerolls((r) => ({ ...r, era: r.era + 1 }));
@@ -204,6 +230,7 @@ export default function PerfectSeasonGame() {
   }
 
   function start(m: Mode) {
+    setDaily(false);
     setMode(m);
     setSquad(SQUADS[m].map(() => null));
     setReels({ team: null, era: null });
@@ -211,13 +238,54 @@ export default function PerfectSeasonGame() {
     setNotice(null);
     setPendingPick(null);
   }
-  function reset() {
-    if (!mode) return;
-    setSquad(SQUADS[mode].map(() => null));
-    setReels({ team: null, era: null });
+
+  /** The fixed daily team + era. Deterministic from rng(dailySeed("play")) so
+   *  every visitor that UTC day drafts the SAME pool. We pick from the full set
+   *  of (team, era) pairs that carry at least nine players (enough for the
+   *  Starting Nine), so the draw always has a draftable lineup. */
+  const dailyDraw = useCallback((): { team: string; era: string } | null => {
+    if (!pool) return null;
+    const counts = new Map<string, number>();
+    for (const p of pool) {
+      const key = `${p.team}@@${p.era}`;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const pairs = Array.from(counts.entries())
+      .filter(([, n]) => n >= 9)
+      .map(([k]) => k)
+      .sort(); // stable, deterministic ordering independent of object insertion
+    if (!pairs.length) return null;
+    const rand = rng(dailySeed("play"));
+    const chosen = pairs[Math.floor(rand() * pairs.length)];
+    const [team, era] = chosen.split("@@");
+    return { team, era };
+  }, [pool]);
+
+  /** Enter the daily challenge: always Starting Nine, fixed spin, no re-rolls. */
+  function startDaily() {
+    setDaily(true);
+    setMode("quick");
+    setSquad(SQUADS.quick.map(() => null));
     setRerolls({ team: 0, era: 0 });
     setNotice(null);
     setPendingPick(null);
+    setPosFilter("All");
+    const draw = dailyDraw();
+    setReels(draw ? { team: draw.team, era: draw.era } : { team: null, era: null });
+  }
+  function reset() {
+    if (!mode) return;
+    setSquad(SQUADS[mode].map(() => null));
+    setRerolls({ team: 0, era: 0 });
+    setNotice(null);
+    setPendingPick(null);
+    if (daily) {
+      // re-drafting the daily challenge keeps the same fixed draw
+      const draw = dailyDraw();
+      setReels(draw ? { team: draw.team, era: draw.era } : { team: null, era: null });
+    } else {
+      setReels({ team: null, era: null });
+    }
   }
 
   // positions that still have an open slot (for highlighting the filters)
@@ -226,6 +294,21 @@ export default function PerfectSeasonGame() {
     slots.forEach((s, i) => { if (!squad[i] && s.code !== "INT") set.add(s.code); });
     return set;
   }, [slots, squad]);
+
+  // The on-field codes the diamond cares about (everything but pitchers/bench).
+  const FIELD = ["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"];
+  // The next empty field spot — the diamond highlights it as "active".
+  const activeFieldCode = useMemo(() => {
+    const idx = slots.findIndex((s, i) => !squad[i] && FIELD.includes(s.code));
+    return idx === -1 ? null : slots[idx].code;
+  }, [slots, squad]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Tapping a diamond spot focuses the candidate list on that position (or, for
+  // a filled spot, just selects its filter so you can see who's there).
+  function pickDiamondSlot(code: string) {
+    if (spinning || done) return;
+    setPosFilter((cur) => (cur === code ? "All" : code));
+  }
 
   const shownCandidates = useMemo(() => {
     if (posFilter === "All") return candidates;
@@ -261,6 +344,28 @@ export default function PerfectSeasonGame() {
             Choose your game.
           </p>
         </header>
+
+        {/* Daily Challenge — everyone gets the SAME draw and competes on a
+            shared daily leaderboard. */}
+        <button onClick={startDaily} className="card"
+          style={{ padding: "1.15rem 1.25rem", textAlign: "left", cursor: "pointer", color: "var(--text)",
+            display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
+            border: "1.5px solid var(--accent)", background: "linear-gradient(135deg, rgba(228,50,43,0.14), rgba(55,194,129,0.10))" }}>
+          <span style={{ fontSize: "2.2rem", lineHeight: 1 }} aria-hidden>⚾</span>
+          <span style={{ display: "grid", gap: 4, flex: 1, minWidth: 200 }}>
+            <span style={{ fontSize: ".7rem", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--accent)" }}>
+              Daily Challenge · {dailyDateLabel()}
+            </span>
+            <strong style={{ fontFamily: "var(--font-cond)", fontSize: "1.45rem", textTransform: "uppercase" }}>
+              Today&apos;s Starting Nine
+            </strong>
+            <span style={{ fontSize: ".85rem", color: "var(--muted)", lineHeight: 1.45 }}>
+              The same fixed team &amp; season for everyone today — draft the best nine and climb the shared daily leaderboard. No re-rolls.
+            </span>
+          </span>
+          <span className="chip" style={{ color: "var(--accent-2)", whiteSpace: "nowrap" }}>Play today →</span>
+        </button>
+
         <div className="grid-cards">
           {ORDER.map((m) => {
             const info = MODE_INFO[m];
@@ -294,16 +399,28 @@ export default function PerfectSeasonGame() {
                   style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: 2 }}>
                   {muted ? "🔇" : "🔊"}
                 </button>
-                <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.2rem", textTransform: "uppercase", color: "var(--gold)" }}>{MODE_INFO[mode].name}</span>
+                <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.2rem", textTransform: "uppercase", color: "var(--gold)" }}>{daily ? "Daily Challenge" : MODE_INFO[mode].name}</span>
               </div>
             </div>
+
+            {daily && (
+              <div style={{ marginBottom: 14, padding: "10px 12px", borderRadius: 8,
+                border: "1px solid var(--accent)", background: "rgba(228,50,43,0.10)",
+                display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <span style={{ fontSize: "1.1rem", lineHeight: 1 }} aria-hidden>⚾</span>
+                <span style={{ fontSize: ".82rem", lineHeight: 1.4 }}>
+                  <strong>Daily Challenge · {dailyDateLabel()}</strong>
+                  <span style={{ color: "var(--muted)" }}> — same draw for everyone today. Draft your best nine; no re-rolls.</span>
+                </span>
+              </div>
+            )}
 
             <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
               <Reel label="Team" value={reels.team} spinning={spinning} big />
               <Reel label="Season" value={reels.era} spinning={spinning} />
             </div>
 
-            {(!reels.team || spinning) ? (
+            {daily ? null : (!reels.team || spinning) ? (
               <button className="btn btn-primary" style={{ width: "100%" }} onClick={spinFresh} disabled={spinning}>
                 {spinning ? "Spinning…" : "Spin"}
               </button>
@@ -417,12 +534,24 @@ export default function PerfectSeasonGame() {
             )}
           </>
         ) : (
-          <ResultView mode={mode} squad={filled} avg={avg} strengths={strengths} onReset={reset} onMode={() => setMode(null)} />
+          <ResultView mode={mode} daily={daily} squad={filled} avg={avg} strengths={strengths} onReset={reset} onMode={() => setMode(null)} />
         )}
       </section>
 
-      {/* RIGHT: roster sheet */}
+      {/* RIGHT: the diamond + roster sheet */}
       <section className="card" style={{ padding: "1rem 1rem 1.1rem", alignSelf: "start" }}>
+        {/* The nine fielding spots as a baseball diamond — the primary visual.
+            Tapping a spot focuses the candidate list on that position. Pitchers
+            and bench stay in the roster-sheet list below. */}
+        <div style={{ marginBottom: 14 }}>
+          <DiamondField
+            slots={slots}
+            squad={squad}
+            activeCode={activeFieldCode}
+            onPick={pickDiamondSlot}
+          />
+        </div>
+
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: ".7rem", letterSpacing: ".12em", color: "var(--muted)", textTransform: "uppercase", paddingBottom: 10, borderBottom: "1px solid var(--border)" }}>
           <span>Roster sheet</span>
           <span style={{ color: "var(--gold)" }}>{filled.length ? `AVG ${avg.toFixed(1)}` : "—"}</span>
@@ -484,8 +613,8 @@ function Reel({ label, value, spinning, big }: { label: string; value: string | 
   );
 }
 
-function ResultView({ mode, squad, avg, strengths, onReset, onMode }: {
-  mode: Mode; squad: PoolPlayer[]; avg: number; strengths: Record<string, number[]>;
+function ResultView({ mode, daily, squad, avg, strengths, onReset, onMode }: {
+  mode: Mode; daily?: boolean; squad: PoolPlayer[]; avg: number; strengths: Record<string, number[]>;
   onReset: () => void; onMode: () => void;
 }) {
   const [name, setNm] = useState("");
@@ -509,15 +638,26 @@ function ResultView({ mode, squad, avg, strengths, onReset, onMode }: {
   function save() {
     if (name.trim()) setName(name.trim());
     const score = mode === "spoon" ? 162 - rec.wins : rec.wins;
+    // Always post to the per-mode board.
     submitScore(`perfect-${mode}`, score, true);
-    // also feed the rolling daily board shown on the home page
-    submitScore(`daily-${todayKey()}`, score, true);
+    // Feed the shared daily board (shown on the home page). The Daily Challenge
+    // is the headline contributor — everyone drafts the same fixed nine — but a
+    // normal run also lands here so the board is never empty. Daily Challenge
+    // submits its win total so the leaderboard ranks "most wins from today's
+    // shared draw".
+    const dailyScore = daily ? rec.wins : score;
+    submitScore(`daily-${todayKey()}`, dailyScore, true);
     setSaved(true);
   }
 
   return (
     <div style={{ textAlign: "center", padding: "0.5rem 0.25rem", position: "relative" }}>
       {perfect && <Confetti />}
+      {daily && (
+        <div className="chip" style={{ color: "var(--accent)", marginBottom: 8 }}>
+          ⚾ Daily Challenge · {dailyDateLabel()}
+        </div>
+      )}
       <div style={{ fontFamily: "var(--font-cond)", fontSize: "clamp(56px,12vw,104px)", lineHeight: 1, display: "flex", justifyContent: "center", gap: 8, alignItems: "baseline" }}>
         <span style={{ color: "var(--accent-2)" }}>{rec.wins}</span>
         <span style={{ color: "var(--muted)", fontSize: ".6em" }}>–</span>

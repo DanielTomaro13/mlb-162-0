@@ -32,9 +32,9 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const API = process.env.API_BASE || "https://statsapi.mlb.com/api/v1";
-const MAX_SEASONS = Number(process.env.MAX_SEASONS || 11);
-const POOL_MIN_PA = Number(process.env.POOL_MIN_PA || 150);
-const POOL_MIN_IP = Number(process.env.POOL_MIN_IP || 30);
+const MAX_SEASONS = Number(process.env.MAX_SEASONS || 15);
+const POOL_MIN_PA = Number(process.env.POOL_MIN_PA || 50);
+const POOL_MIN_IP = Number(process.env.POOL_MIN_IP || 15);
 const CONCURRENCY = Number(process.env.CONCURRENCY || 8);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -116,15 +116,29 @@ function abbrOf(team) {
 }
 
 /* ---- rating models -------------------------------------------------------- */
-/** Hitter rating from OPS, nudged by power/speed volume. 60–99. */
+/**
+ * Hitter rating, 60–99. Built mostly on overall production (OPS) but reading in
+ * on-base skill, power, run production and speed so a complete hitter outscores
+ * a one-dimensional one. Lightly scaled by playing time so a tiny sample can't
+ * post a 99.
+ */
 function rateHitter(st) {
   const ops = num(st.ops);
-  const t = clamp((ops - 0.600) / (1.050 - 0.600), 0, 1);
-  let r = 60 + t * 37;
-  r += Math.min(3, num(st.homeRuns) / 18) + Math.min(2, num(st.stolenBases) / 25);
+  const tOps = clamp((ops - 0.600) / (1.050 - 0.600), 0, 1);
+  const tObp = clamp((num(st.obp) - 0.290) / (0.430 - 0.290), 0, 1);
+  let r = 60 + (0.78 * tOps + 0.22 * tObp) * 37;
+  r += Math.min(3, num(st.homeRuns) / 17);            // power
+  r += Math.min(1.6, num(st.rbi) / 70);               // run production
+  r += Math.min(1.4, num(st.stolenBases) / 25);       // speed
+  const pa = num(st.plateAppearances);
+  if (pa < 250) r -= (250 - pa) / 250 * 6;            // sample-size haircut
   return Math.round(clamp(r, 60, 99));
 }
-/** Pitcher rating — blend of ERA, WHIP and K/9. 60–99. */
+/**
+ * Pitcher rating, 60–99. Blends run prevention (ERA), traffic allowed (WHIP) and
+ * bat-missing (K/9), with a small bump for high-leverage save/win workload, and
+ * the same light sample-size scaling.
+ */
 function ratePitcher(st) {
   const era = num(st.era);
   const whip = num(st.whip);
@@ -132,7 +146,10 @@ function ratePitcher(st) {
   const tEra = clamp((5.20 - era) / (5.20 - 2.20), 0, 1);
   const tWhip = clamp((1.55 - whip) / (1.55 - 0.92), 0, 1);
   const tK = clamp((k9 - 5.5) / (13.0 - 5.5), 0, 1);
-  const r = 60 + (0.5 * tEra + 0.3 * tWhip + 0.2 * tK) * 38;
+  let r = 60 + (0.5 * tEra + 0.3 * tWhip + 0.2 * tK) * 37;
+  r += Math.min(2, num(st.saves) / 22) + Math.min(1.5, num(st.wins) / 14);
+  const ipv = ip(st.inningsPitched);
+  if (ipv < 40) r -= (40 - ipv) / 40 * 5;            // sample-size haircut
   return Math.round(clamp(r, 60, 99));
 }
 /** SP / RP / CL from role volume. */
@@ -194,9 +211,11 @@ async function main() {
             team: teamName || "MLB", era: String(season), kind: "bat",
             pos, posName: POS_LABEL[pos] || pos, elig: hitterElig(pos),
             rating: rateHitter(st),
-            g: num(st.gamesPlayed),
+            g: num(st.gamesPlayed), pa,
             hr: num(st.homeRuns), rbi: num(st.rbi), runs: num(st.runs),
             hits: num(st.hits), sb: num(st.stolenBases),
+            db: num(st.doubles), tp: num(st.triples), bb: num(st.baseOnBalls),
+            so: num(st.strikeOuts), tb: num(st.totalBases),
             avg: +(num(st.avg)).toFixed(3), obp: +(num(st.obp)).toFixed(3),
             slg: +(num(st.slg)).toFixed(3), ops: +(num(st.ops)).toFixed(3),
           };
@@ -212,11 +231,12 @@ async function main() {
             team: teamName || "MLB", era: String(season), kind: "pit",
             pos, posName: POS_LABEL[pos] || pos, elig,
             rating: ratePitcher(st),
-            g: num(st.gamesPitched) || num(st.gamesPlayed),
+            g: num(st.gamesPitched) || num(st.gamesPlayed), gs: num(st.gamesStarted),
             w: num(st.wins), l: num(st.losses), sv: num(st.saves),
             eraAvg: +(num(st.era)).toFixed(2), whip: +(num(st.whip)).toFixed(2),
-            so: num(st.strikeOuts), ip: +innings.toFixed(1),
-            k9: +(num(st.strikeoutsPer9Inn)).toFixed(1),
+            so: num(st.strikeOuts), bb: num(st.baseOnBalls), ip: +innings.toFixed(1),
+            k9: +(num(st.strikeoutsPer9Inn)).toFixed(1), hra: num(st.homeRuns),
+            sho: num(st.shutouts), cg: num(st.completeGames),
           };
           // a pitcher-season can exist in both groups; keep the pitching card
           agg.set(card.id, card);
@@ -238,8 +258,8 @@ async function main() {
       c = {
         id: p.pid, name: p.name, kind: p.kind, teamCounts: {}, posCounts: {},
         seasons: new Set(), bestRating: 0,
-        hr: 0, rbi: 0, runs: 0, hits: 0, sb: 0, opsSum: 0, opsN: 0,
-        w: 0, sv: 0, so: 0, ipSum: 0, eraSum: 0, eraN: 0,
+        hr: 0, rbi: 0, runs: 0, hits: 0, sb: 0, db: 0, tp: 0, bb: 0, soBat: 0, opsSum: 0, opsN: 0,
+        w: 0, l: 0, sv: 0, so: 0, ipSum: 0, bbPit: 0, eraSum: 0, eraN: 0,
       };
       careers.set(p.pid, c);
     }
@@ -249,9 +269,10 @@ async function main() {
     c.bestRating = Math.max(c.bestRating, p.rating);
     if (p.kind === "bat") {
       c.hr += p.hr; c.rbi += p.rbi; c.runs += p.runs; c.hits += p.hits; c.sb += p.sb;
+      c.db += p.db; c.tp += p.tp; c.bb += p.bb; c.soBat += p.so;
       c.opsSum += p.ops; c.opsN++;
     } else {
-      c.w += p.w; c.sv += p.sv; c.so += p.so; c.ipSum += p.ip;
+      c.w += p.w; c.l += p.l; c.sv += p.sv; c.so += p.so; c.ipSum += p.ip; c.bbPit += p.bb;
       c.eraSum += p.eraAvg; c.eraN++;
     }
   }
@@ -272,8 +293,9 @@ async function main() {
       seasons: c.seasons.size, rating: c.bestRating, fame,
       // career counting + rate lines (per the player's kind)
       hr: c.hr, rbi: c.rbi, runs: c.runs, hits: c.hits, sb: c.sb,
+      db: c.db, tp: c.tp, bb: c.bb, soBat: c.soBat,
       ops: c.opsN ? +(c.opsSum / c.opsN).toFixed(3) : 0,
-      w: c.w, sv: c.sv, so: c.so, ip: Math.round(c.ipSum),
+      w: c.w, l: c.l, sv: c.sv, so: c.so, ip: Math.round(c.ipSum), bbPit: c.bbPit,
       eraAvg: c.eraN ? +(c.eraSum / c.eraN).toFixed(2) : 0,
     });
   }
@@ -287,13 +309,17 @@ async function main() {
     { key: "hr30", label: "30+ HR season" },
     { key: "hr40", label: "40+ HR season" },
     { key: "rbi100", label: "100+ RBI season" },
+    { key: "runs100", label: "100+ Runs season" },
+    { key: "hits180", label: "180+ Hit season" },
+    { key: "db40", label: "40+ Double season" },
     { key: "sb30", label: "30+ SB season" },
     { key: "avg300", label: ".300+ AVG season" },
     { key: "ops900", label: ".900+ OPS season" },
     { key: "k200", label: "200+ K season" },
-    { key: "w18", label: "18+ Win season" },
+    { key: "w15", label: "15+ Win season" },
     { key: "sv30", label: "30+ Save season" },
     { key: "era300", label: "Sub-3.00 ERA season" },
+    { key: "ip200", label: "200+ IP season" },
   ];
   const gp = new Map(); // pid -> { teams:Set, flags:Set }
   for (const c of pool) {
@@ -304,14 +330,18 @@ async function main() {
       if (c.hr >= 30) e.flags.add("hr30");
       if (c.hr >= 40) e.flags.add("hr40");
       if (c.rbi >= 100) e.flags.add("rbi100");
+      if (c.runs >= 100) e.flags.add("runs100");
+      if (c.hits >= 180) e.flags.add("hits180");
+      if (c.db >= 40) e.flags.add("db40");
       if (c.sb >= 30) e.flags.add("sb30");
-      if (c.avg >= 0.300) e.flags.add("avg300");
-      if (c.ops >= 0.900) e.flags.add("ops900");
+      if (c.avg >= 0.300 && c.pa >= 300) e.flags.add("avg300");
+      if (c.ops >= 0.900 && c.pa >= 300) e.flags.add("ops900");
     } else {
       if (c.so >= 200) e.flags.add("k200");
-      if (c.w >= 18) e.flags.add("w18");
+      if (c.w >= 15) e.flags.add("w15");
       if (c.sv >= 30) e.flags.add("sv30");
       if (c.eraAvg > 0 && c.eraAvg <= 3.0 && c.ip >= 100) e.flags.add("era300");
+      if (c.ip >= 200) e.flags.add("ip200");
     }
   }
   const fameById = new Map(gamePlayers.map((p) => [p.id, p]));

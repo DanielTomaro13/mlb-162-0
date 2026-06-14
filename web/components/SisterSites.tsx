@@ -1,16 +1,19 @@
 /**
  * Cross-site strip linking the sister projects (the "0 Series"). The same bar
- * lives at the top of AFL 23-0, NRL 24-0 and Football Invincibles so every site
- * points at one another.
+ * lives at the top of every sibling site so they all point at one another.
  */
 const SITES = [
   { key: "afl", label: "AFL 23-0", href: "https://afl23-0.com" },
   { key: "nrl", label: "NRL 24-0", href: "https://nrl24-0.com" },
   { key: "mlb", label: "MLB 162-0", href: "https://mlb162-0.com" },
+  { key: "nba", label: "NBA 82-0", href: "https://nba82-0.com" },
+  { key: "f1", label: "F1 Slam", href: "https://f1slam.com" },
   { key: "football", label: "Football Invincibles", href: "https://footballinvincibles.com" },
 ];
 
-export default function SisterSites({ active }: { active: "afl" | "nrl" | "mlb" | "football" }) {
+type SiteKey = "afl" | "nrl" | "mlb" | "nba" | "f1" | "football";
+
+export default function SisterSites({ active }: { active: SiteKey }) {
   return (
     <div className="sister-bar" role="navigation" aria-label="Sister sites">
       <span style={{ color: "var(--muted)", marginRight: 2, fontWeight: 700, fontSize: ".7rem" }}>

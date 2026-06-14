@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { serverMeta, serverResults } from "@/lib/serverdata";
 import { notablePlayers } from "@/lib/playerdb";
 import { teamColors } from "@/lib/teams";
 import { avg3 } from "@/lib/format";
@@ -9,8 +8,6 @@ import DailyLeaderboard from "@/components/DailyLeaderboard";
 import { GAMES } from "@/lib/gamelist";
 
 export default function Home() {
-  const meta = serverMeta();
-  const results = serverResults();
   const featured = notablePlayers().slice(0, 6);
 
   return (
@@ -26,10 +23,10 @@ export default function Home() {
           and chase the season no team has ever had. Then take on a vault of baseball mini-games.
         </p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Link href="/play?quick=1" className="btn btn-primary">⚾ Starting Nine — spin now</Link>
+          <Link href="/play?daily=1" className="btn btn-primary">⚾ Daily Challenge</Link>
           <Link href="/play" className="btn">All modes</Link>
           <Link href="/games" className="btn">Mini-games</Link>
-          <Link href="/standings" className="btn">{meta.liveSeason} Standings</Link>
+          <Link href="/perfect" className="btn">162-0 Tracker</Link>
         </div>
       </section>
 
@@ -54,32 +51,25 @@ export default function Home() {
         </div>
       </section>
 
-      {/* standings + leaderboards */}
+      {/* daily challenge + leaderboards */}
       <section style={{ display: "grid", gap: "1rem", gridTemplateColumns: "minmax(0,1.4fr) minmax(0,1fr)" }} className="home-split">
         <style>{`@media (max-width: 760px){ .home-split { grid-template-columns: 1fr !important; } }`}</style>
-        <div className="card" style={{ padding: "1.1rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-            <h2 style={{ margin: 0, fontSize: "1.1rem" }}>{meta.liveSeason} — top of the majors</h2>
-            <Link href="/standings" style={{ fontSize: ".8rem", color: "var(--accent)" }}>Full standings →</Link>
+        <div className="card" style={{ padding: "1.4rem", display: "grid", gap: 12, alignContent: "start", borderColor: "var(--accent)" }}>
+          <span className="chip" style={{ width: "fit-content", color: "var(--gold)" }}>New every day · same draw for everyone</span>
+          <h2 style={{ margin: 0, fontSize: "1.5rem", textTransform: "uppercase" }}>The Daily Challenge</h2>
+          <p style={{ color: "var(--muted)", margin: 0, fontSize: ".95rem" }}>
+            Everyone gets the <strong>same franchise and era</strong> today. Draft the best Starting Nine
+            you can, simulate your 162 games, and see where your record lands on today&apos;s board.
+            A new draw drops at midnight UTC.
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Link href="/play?daily=1" className="btn btn-primary">⚾ Play today&apos;s challenge</Link>
+            <Link href="/leaderboard" className="btn">Hall of Fame</Link>
           </div>
-          <table className="stat">
-            <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th></tr></thead>
-            <tbody>
-              {(results.laddersBySeason[meta.liveSeason] ?? []).slice(0, 6).map((t, i) => {
-                const [c1] = teamColors(t.team);
-                return (
-                  <tr key={t.team}>
-                    <td style={{ color: "var(--muted)" }}>{i + 1}</td>
-                    <td style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span style={{ width: 8, height: 8, borderRadius: 2, background: c1 }} />{t.team}
-                    </td>
-                    <td style={{ fontWeight: 700 }}>{t.w}</td><td>{t.l}</td>
-                    <td>{avg3(t.pct)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <p style={{ fontSize: ".78rem", color: "var(--muted)", margin: 0 }}>
+            Prefer a free draft? <Link href="/play" style={{ color: "var(--accent)" }}>All six modes →</Link>
+            {" · "}<Link href="/standings" style={{ color: "var(--accent)" }}>Live standings →</Link>
+          </p>
         </div>
         <div style={{ display: "grid", gap: "1rem" }}>
           <DailyLeaderboard />

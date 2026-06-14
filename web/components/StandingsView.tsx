@@ -13,9 +13,11 @@ const DIV_ORDER = [
 export default function StandingsView() {
   const [data, setData] = useState<Results | null>(null);
   const [season, setSeason] = useState<string>("");
+  const [league, setLeague] = useState<"all" | "103" | "104">("all");
   useEffect(() => { loadResults().then((r) => { setData(r); setSeason(r.seasons[0]); }); }, []);
   if (!data) return <p style={{ color: "var(--muted)" }}>Loading standings…</p>;
-  const rows = data.laddersBySeason[season] ?? [];
+  const allRows = data.laddersBySeason[season] ?? [];
+  const rows = league === "all" ? allRows : allRows.filter((r) => String(r.league) === league);
   const isLive = season === data.liveSeason;
 
   const byDiv = new Map<string, LadderRow[]>();
@@ -35,6 +37,13 @@ export default function StandingsView() {
         <select value={season} onChange={(e) => setSeason(e.target.value)}
           style={{ padding: ".4rem .6rem", borderRadius: 8, border: "1px solid var(--border)", background: "var(--panel)", color: "var(--text)" }}>
           {data.seasons.map((s) => <option key={s} value={s}>{s}{s === data.liveSeason ? " (live)" : ""}</option>)}
+        </select>
+        <label style={{ fontSize: ".82rem", color: "var(--muted)" }}>League</label>
+        <select value={league} onChange={(e) => setLeague(e.target.value as "all" | "103" | "104")}
+          style={{ padding: ".4rem .6rem", borderRadius: 8, border: "1px solid var(--border)", background: "var(--panel)", color: "var(--text)" }}>
+          <option value="all">All</option>
+          <option value="103">American</option>
+          <option value="104">National</option>
         </select>
         {isLive && <span className="chip" style={{ color: "var(--accent-2)" }}>● Live — updates daily</span>}
       </div>

@@ -77,14 +77,19 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
             {stat("Hits", p.hits)}
             {stat("Runs", p.runs)}
             {stat("Stolen Bases", p.sb)}
+            {stat("Doubles", p.db)}
+            {stat("Walks", p.bb)}
+            {stat("Strikeouts", p.soBat)}
             {stat("OPS", avg3(p.ops))}
           </>
         ) : (
           <>
             {stat("Wins", p.w)}
+            {stat("Losses", p.l)}
             {stat("Strikeouts", p.so)}
             {stat("Saves", p.sv)}
             {stat("Innings", p.ip)}
+            {stat("Walks", p.bbPit)}
             {stat("ERA", p.eraAvg.toFixed(2))}
             {stat("Seasons", p.seasons)}
           </>
