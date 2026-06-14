@@ -7,7 +7,7 @@ import { teamAbbr } from "@/lib/teams";
 export const dynamic = "force-static";
 
 const GAMES = [
-  "invincibles", "diamond", "grid", "higher-or-lower", "guess-the-player",
+  "diamond", "grid", "higher-or-lower", "guess-the-player",
   "career-path", "beat-the-clock", "score-predictor",
 ];
 

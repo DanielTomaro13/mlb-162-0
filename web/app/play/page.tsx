@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { pageMeta } from "@/lib/seo";
 import PerfectSeasonGame from "@/components/PerfectSeasonGame";
+import DailyLeaderboard from "@/components/DailyLeaderboard";
+import HomeLeaderboard from "@/components/HomeLeaderboard";
 
 export const metadata = pageMeta({
   title: "Play Perfect Season — draft an all-time MLB roster",
@@ -24,6 +27,24 @@ export default function PlayPage() {
         </p>
       </header>
       <PerfectSeasonGame />
+
+      {/* The shared 162-0 boards: today's Daily Challenge results + the all-time
+          Hall of Fame. Your saved runs post here. */}
+      <section style={{ marginTop: "2.5rem", display: "grid", gap: "1rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
+          <h2 style={{ margin: 0, fontSize: "1.4rem", textTransform: "uppercase" }}>The 162-0 boards</h2>
+          <Link href="/leaderboard" style={{ fontSize: ".85rem", color: "var(--accent)" }}>Full Hall of Fame →</Link>
+        </div>
+        <p style={{ color: "var(--muted)", margin: 0, fontSize: ".9rem" }}>
+          Save a run to post your record. The <strong>Daily Challenge</strong> board resets every day
+          with a fresh shared draw; the <strong>Hall of Fame</strong> keeps the all-time best.
+        </p>
+        <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "1fr 1fr" }} className="play-boards">
+          <style>{`@media (max-width: 640px){ .play-boards { grid-template-columns: 1fr !important; } }`}</style>
+          <DailyLeaderboard />
+          <HomeLeaderboard />
+        </div>
+      </section>
     </>
   );
 }

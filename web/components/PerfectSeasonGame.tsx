@@ -336,12 +336,11 @@ export default function PerfectSeasonGame() {
     return (
       <div style={{ display: "grid", gap: "1.25rem" }}>
         <header>
-          <h1 style={{ fontSize: "2.4rem", margin: 0, textTransform: "uppercase" }}>
-            Perfect <span style={{ color: "var(--accent)" }}>Season</span>
-          </h1>
+          <h2 style={{ fontSize: "1.6rem", margin: 0, textTransform: "uppercase" }}>
+            Choose your <span style={{ color: "var(--accent)" }}>game</span>
+          </h2>
           <p style={{ color: "var(--muted)", maxWidth: 640, marginTop: 6 }}>
             Spin for a team and season, draft the player, fill your roster and chase a flawless 162–0.
-            Choose your game.
           </p>
         </header>
 

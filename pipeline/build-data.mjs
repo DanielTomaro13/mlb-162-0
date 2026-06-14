@@ -32,7 +32,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const API = process.env.API_BASE || "https://statsapi.mlb.com/api/v1";
-const MAX_SEASONS = Number(process.env.MAX_SEASONS || 15);
+const MAX_SEASONS = Number(process.env.MAX_SEASONS || 26);
 const POOL_MIN_PA = Number(process.env.POOL_MIN_PA || 50);
 const POOL_MIN_IP = Number(process.env.POOL_MIN_IP || 15);
 const CONCURRENCY = Number(process.env.CONCURRENCY || 8);
@@ -124,14 +124,15 @@ function abbrOf(team) {
  */
 function rateHitter(st) {
   const ops = num(st.ops);
-  const tOps = clamp((ops - 0.600) / (1.050 - 0.600), 0, 1);
-  const tObp = clamp((num(st.obp) - 0.290) / (0.430 - 0.290), 0, 1);
-  let r = 60 + (0.78 * tOps + 0.22 * tObp) * 37;
-  r += Math.min(3, num(st.homeRuns) / 17);            // power
-  r += Math.min(1.6, num(st.rbi) / 70);               // run production
-  r += Math.min(1.4, num(st.stolenBases) / 25);       // speed
+  // a wide ceiling (1.100 OPS ≈ a historic MVP year) keeps 99s genuinely rare.
+  const tOps = clamp((ops - 0.600) / (1.100 - 0.600), 0, 1);
+  const tObp = clamp((num(st.obp) - 0.290) / (0.440 - 0.290), 0, 1);
+  let r = 60 + (0.80 * tOps + 0.20 * tObp) * 38;
+  r += Math.min(2.5, num(st.homeRuns) / 18);          // power
+  r += Math.min(1.2, num(st.rbi) / 80);               // run production
+  r += Math.min(1.0, num(st.stolenBases) / 30);       // speed
   const pa = num(st.plateAppearances);
-  if (pa < 250) r -= (250 - pa) / 250 * 6;            // sample-size haircut
+  if (pa < 250) r -= (250 - pa) / 250 * 7;            // sample-size haircut
   return Math.round(clamp(r, 60, 99));
 }
 /**
@@ -143,13 +144,14 @@ function ratePitcher(st) {
   const era = num(st.era);
   const whip = num(st.whip);
   const k9 = num(st.strikeoutsPer9Inn);
-  const tEra = clamp((5.20 - era) / (5.20 - 2.20), 0, 1);
-  const tWhip = clamp((1.55 - whip) / (1.55 - 0.92), 0, 1);
-  const tK = clamp((k9 - 5.5) / (13.0 - 5.5), 0, 1);
-  let r = 60 + (0.5 * tEra + 0.3 * tWhip + 0.2 * tK) * 37;
-  r += Math.min(2, num(st.saves) / 22) + Math.min(1.5, num(st.wins) / 14);
+  // sub-1.80 ERA / sub-0.90 WHIP ceilings keep a 99 to truly dominant seasons.
+  const tEra = clamp((5.20 - era) / (5.20 - 1.80), 0, 1);
+  const tWhip = clamp((1.55 - whip) / (1.55 - 0.88), 0, 1);
+  const tK = clamp((k9 - 5.5) / (13.5 - 5.5), 0, 1);
+  let r = 60 + (0.5 * tEra + 0.3 * tWhip + 0.2 * tK) * 38;
+  r += Math.min(1.6, num(st.saves) / 28) + Math.min(1.2, num(st.wins) / 16);
   const ipv = ip(st.inningsPitched);
-  if (ipv < 40) r -= (40 - ipv) / 40 * 5;            // sample-size haircut
+  if (ipv < 40) r -= (40 - ipv) / 40 * 6;            // sample-size haircut
   return Math.round(clamp(r, 60, 99));
 }
 /** SP / RP / CL from role volume. */
@@ -434,6 +436,34 @@ async function main() {
     console.log(`  ! schedule unavailable: ${e.message}`);
   }
 
+  /* ---- live-season player leaders (front page current-season stats) ------ */
+  console.log(`→ ${NOW_SEASON} qualified leaders…`);
+  const liveLeaders = { season: String(NOW_SEASON), hitting: {}, pitching: {} };
+  const lead = (splits, key, dir, n = 8) =>
+    [...splits]
+      .filter((s) => num(s.stat?.[key]) !== 0 || key === "era" || key === "whip")
+      .sort((a, b) => dir * (num(b.stat[key]) - num(a.stat[key])))
+      .slice(0, n)
+      .map((s) => ({ id: s.player?.id, name: s.player?.fullName, team: s.team?.name, v: num(s.stat[key]) }));
+  try {
+    const hit = await api(`/stats?stats=season&group=hitting&season=${NOW_SEASON}&sportId=1&limit=400&playerPool=qualified`);
+    const hs = arr(hit?.stats?.[0]?.splits);
+    liveLeaders.hitting = {
+      homeRuns: lead(hs, "homeRuns", 1), rbi: lead(hs, "rbi", 1), avg: lead(hs, "avg", 1),
+      ops: lead(hs, "ops", 1), hits: lead(hs, "hits", 1), stolenBases: lead(hs, "stolenBases", 1),
+      runs: lead(hs, "runs", 1), doubles: lead(hs, "doubles", 1),
+    };
+    const pit = await api(`/stats?stats=season&group=pitching&season=${NOW_SEASON}&sportId=1&limit=400&playerPool=qualified`);
+    const ps = arr(pit?.stats?.[0]?.splits);
+    liveLeaders.pitching = {
+      wins: lead(ps, "wins", 1), strikeOuts: lead(ps, "strikeOuts", 1), saves: lead(ps, "saves", 1),
+      era: lead(ps, "era", -1), whip: lead(ps, "whip", -1), inningsPitched: lead(ps, "inningsPitched", 1),
+    };
+    console.log(`  HR leader: ${liveLeaders.hitting.homeRuns?.[0]?.name} (${liveLeaders.hitting.homeRuns?.[0]?.v})`);
+  } catch (e) {
+    console.log(`  ! live leaders unavailable: ${e.message}`);
+  }
+
   /* ---- write outputs ----------------------------------------------------- */
   await mkdir(OUT_DIR, { recursive: true });
   const generatedAt = new Date().toISOString();
@@ -450,13 +480,28 @@ async function main() {
   const games = { season: String(LATEST_COMPLETE), players: gamePlayers, strengthsBySeason };
   const results = {
     seasons: seasonsWithLadder, liveSeason: String(NOW_SEASON),
-    laddersBySeason, schedule,
+    laddersBySeason, schedule, liveLeaders,
   };
   const strengths = { bySeason: strengthsBySeason };
 
+  // The draft (/play) only needs the head + a short display stat line; the extra
+  // per-season stats exist solely to feed the career/grid/rating computation
+  // above, so they're dropped from the shipped pool to keep it lean.
+  const slimPool = pool.map((c) => {
+    const head = {
+      id: c.id, pid: c.pid, name: c.name, team: c.team, era: c.era,
+      kind: c.kind, pos: c.pos, posName: c.posName, elig: c.elig, rating: c.rating, g: c.g,
+    };
+    return c.kind === "bat"
+      ? { ...head, hr: c.hr, rbi: c.rbi, runs: c.runs, hits: c.hits, sb: c.sb,
+          avg: c.avg, obp: c.obp, slg: c.slg, ops: c.ops }
+      : { ...head, w: c.w, l: c.l, sv: c.sv, eraAvg: c.eraAvg, whip: c.whip,
+          so: c.so, ip: c.ip, k9: c.k9 };
+  });
+
   await Promise.all([
     writeFile(join(OUT_DIR, "meta.json"), JSON.stringify(meta)),
-    writeFile(join(OUT_DIR, "pool.json"), JSON.stringify(pool)),
+    writeFile(join(OUT_DIR, "pool.json"), JSON.stringify(slimPool)),
     writeFile(join(OUT_DIR, "games.json"), JSON.stringify(games)),
     writeFile(join(OUT_DIR, "results.json"), JSON.stringify(results)),
     writeFile(join(OUT_DIR, "strengths.json"), JSON.stringify(strengths)),

@@ -6,7 +6,7 @@ import { SITE } from "@/lib/seo";
 
 export const metadata = pageMeta({
   title: "MLB Mini-Games — Diamond, Higher or Lower, Guess the Player & more",
-  description: "A vault of free baseball mini-games built on real MLB stats: Diamond (the baseball Wordle), Higher or Lower, Guess the Player, Career Path, Beat the Clock, Score Predictor and the Invincibles roster-builder.",
+  description: "A vault of free baseball mini-games built on real MLB stats: Diamond (the baseball Wordle), the Immaculate Grid, Higher or Lower, Guess the Player, Career Path, Beat the Clock and Score Predictor. Plus the all-time Perfect Season roster builder.",
   path: "/games",
   keywords: ["MLB games", "baseball games", "baseball Wordle", "MLB quiz", "MLB trivia"],
 });
@@ -30,6 +30,17 @@ export default function GamesHub() {
           endless streaks and the roster-builder simulator.
         </p>
       </header>
+
+      {/* The flagship draft-and-simulate game (Perfect Season) lives at /play. */}
+      <Link href="/play" className="card" style={{ padding: "1.25rem", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", border: "1.5px solid var(--accent)", background: "linear-gradient(135deg, rgba(228,50,43,0.12), rgba(55,194,129,0.08))" }}>
+        <span style={{ fontSize: "2.2rem", lineHeight: 1 }} aria-hidden>⚾</span>
+        <span style={{ display: "grid", gap: 4, flex: 1, minWidth: 220 }}>
+          <strong style={{ fontFamily: "var(--font-cond)", fontSize: "1.4rem", textTransform: "uppercase" }}>Perfect Season — the roster builder</strong>
+          <span style={{ fontSize: ".88rem", color: "var(--muted)" }}>Spin a franchise &amp; era, draft your all-time team onto the diamond, and simulate a full 162-game season. Six modes plus a shared Daily Challenge.</span>
+        </span>
+        <span className="chip" style={{ color: "var(--accent-2)", whiteSpace: "nowrap" }}>Play now →</span>
+      </Link>
+
       <div className="grid-cards">
         {GAMES.map((g) => (
           <Link key={g.slug} href={`/games/${g.slug}`} className="card" style={{ padding: "1.1rem", display: "grid", gap: 6 }}>

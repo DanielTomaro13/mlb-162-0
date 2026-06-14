@@ -6,7 +6,7 @@ import { getName, setName, getDaily } from "@/lib/progress";
 const BOARDS = [
   { game: "perfect-classic", label: "Perfect Season — The Roster", high: true },
   { game: "perfect-quick", label: "Perfect Season — Starting Nine", high: true },
-  { game: "invincibles", label: "Invincibles", high: true },
+  { game: "perfect-full", label: "Perfect Season — Active 18", high: true },
   { game: "higher-or-lower", label: "Higher or Lower", high: true },
   { game: "beat-the-clock", label: "Beat the Clock", high: true },
   { game: "career-path", label: "Career Path", high: true },

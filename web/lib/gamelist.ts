@@ -8,7 +8,6 @@ export interface GameDef {
 }
 
 export const GAMES: GameDef[] = [
-  { slug: "invincibles", title: "Invincibles", emoji: "🏆", blurb: "Draft a roster and simulate a whole season. Chase 162-0.", tag: "Endless" },
   { slug: "diamond", title: "Diamond", emoji: "🟩", blurb: "Guess the mystery MLB player in 8 tries — the baseball Wordle.", tag: "Daily" },
   { slug: "grid", title: "Grid", emoji: "⬜", blurb: "Fill a 3×3 grid — a player for every team-and-stat square.", tag: "Daily" },
   { slug: "higher-or-lower", title: "Higher or Lower", emoji: "📈", blurb: "More home runs, strikeouts or wins? Keep the streak alive.", tag: "Endless" },

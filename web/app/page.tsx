@@ -1,14 +1,19 @@
 import Link from "next/link";
+import { serverMeta, serverResults } from "@/lib/serverdata";
 import { notablePlayers } from "@/lib/playerdb";
 import { teamColors } from "@/lib/teams";
 import { avg3 } from "@/lib/format";
-import PerfectChase from "@/components/PerfectChase";
+import LiveLeaders from "@/components/LiveLeaders";
+import LiveStandingsPreview from "@/components/LiveStandingsPreview";
 import HomeLeaderboard from "@/components/HomeLeaderboard";
 import DailyLeaderboard from "@/components/DailyLeaderboard";
 import { GAMES } from "@/lib/gamelist";
 
 export default function Home() {
+  const meta = serverMeta();
+  const results = serverResults();
   const featured = notablePlayers().slice(0, 6);
+  const liveRows = results.laddersBySeason[meta.liveSeason] ?? [];
 
   return (
     <div style={{ display: "grid", gap: "2.5rem" }}>
@@ -24,14 +29,11 @@ export default function Home() {
         </p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link href="/play?daily=1" className="btn btn-primary">⚾ Daily Challenge</Link>
-          <Link href="/play" className="btn">All modes</Link>
+          <Link href="/play" className="btn">🎲 Free draft — spin &amp; build</Link>
           <Link href="/games" className="btn">Mini-games</Link>
           <Link href="/perfect" className="btn">162-0 Tracker</Link>
         </div>
       </section>
-
-      {/* the 162-0 chase — the signature panel */}
-      <PerfectChase />
 
       {/* games grid */}
       <section>
@@ -66,10 +68,6 @@ export default function Home() {
             <Link href="/play?daily=1" className="btn btn-primary">⚾ Play today&apos;s challenge</Link>
             <Link href="/leaderboard" className="btn">Hall of Fame</Link>
           </div>
-          <p style={{ fontSize: ".78rem", color: "var(--muted)", margin: 0 }}>
-            Prefer a free draft? <Link href="/play" style={{ color: "var(--accent)" }}>All six modes →</Link>
-            {" · "}<Link href="/standings" style={{ color: "var(--accent)" }}>Live standings →</Link>
-          </p>
         </div>
         <div style={{ display: "grid", gap: "1rem" }}>
           <DailyLeaderboard />
@@ -77,10 +75,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* featured players */}
+      {/* current-season player stat leaders */}
+      <LiveLeaders data={results.liveLeaders} />
+
+      {/* featured all-time players */}
       <section>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
-          <h2 style={{ margin: 0 }}>Featured players</h2>
+          <h2 style={{ margin: 0 }}>All-time greats</h2>
           <Link href="/players" style={{ fontSize: ".85rem", color: "var(--accent)" }}>All players →</Link>
         </div>
         <div className="grid-cards">
@@ -104,6 +105,9 @@ export default function Home() {
           })}
         </div>
       </section>
+
+      {/* live standings — the real thing, clearly labelled, moved to the foot */}
+      <LiveStandingsPreview rows={liveRows} season={meta.liveSeason} />
     </div>
   );
 }

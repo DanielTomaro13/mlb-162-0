@@ -3,7 +3,7 @@ import LeaderboardView from "@/components/LeaderboardView";
 
 export const metadata = pageMeta({
   title: "Hall of Fame — MLB 162-0 leaderboards",
-  description: "The best Perfect Season records, Invincibles runs, daily streaks and high scores across every MLB 162-0 game.",
+  description: "The best Perfect Season records, Daily Challenge results, daily streaks and high scores across every MLB 162-0 game.",
   path: "/leaderboard",
   keywords: ["MLB 162-0 leaderboard", "baseball game high scores", "hall of fame"],
 });

@@ -19,11 +19,18 @@ export interface Schedule {
   upcoming: GameResult[];
   perfect: PerfectRow[];
 }
+export interface LeaderEntry { id: number; name: string; team: string; v: number; }
+export interface LiveLeaders {
+  season: string;
+  hitting: Record<string, LeaderEntry[]>;   // homeRuns, rbi, avg, ops, hits, stolenBases, runs, doubles
+  pitching: Record<string, LeaderEntry[]>;   // wins, strikeOuts, saves, era, whip, inningsPitched
+}
 export interface Results {
   seasons: string[];
   liveSeason: string;
   laddersBySeason: Record<string, LadderRow[]>;
   schedule: Schedule;
+  liveLeaders?: LiveLeaders;
 }
 
 const cache = new Map<string, unknown>();
