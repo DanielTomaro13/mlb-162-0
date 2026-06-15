@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { pageMeta, breadcrumbJsonLd, SITE } from "@/lib/seo";
 import { notablePlayers, playerById } from "@/lib/playerdb";
-import { teamColors } from "@/lib/teams";
+import { teamColors, teamAbbr } from "@/lib/teams";
 import { avg3 } from "@/lib/format";
 import JsonLd from "@/components/JsonLd";
 
@@ -67,7 +67,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
             <h1 style={{ margin: 0, fontSize: "2rem" }}>{p.name}</h1>
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6, color: "var(--muted)" }}>
               <span style={{ width: 12, height: 12, borderRadius: 3, background: c1, border: `1px solid ${c2}` }} />
-              {p.team} · {p.posName}
+              <Link href={`/teams/${teamAbbr(p.team).toLowerCase()}`} style={{ color: "var(--accent)" }}>{p.team}</Link> · {p.posName}
             </div>
           </div>
           <div style={{ textAlign: "center" }}>

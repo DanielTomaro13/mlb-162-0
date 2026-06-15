@@ -93,6 +93,13 @@ export default async function TeamPage({ params }: { params: Promise<{ abbr: str
   const pitchers = players.filter((p) => p.kind === "pit");
   const top = [...players].sort((a, b) => b.rating - a.rating).slice(0, 12);
 
+  // This franchise's recent games (most recent first) — link to the box scores.
+  const schedule = serverResults().schedule;
+  const teamGames = schedule.results
+    .filter((g) => (g.home === row.team || g.away === row.team) && g.pk)
+    .slice(-8)
+    .reverse();
+
   // Hitter leader boards
   const hrLeaders = [...hitters].sort((a, b) => b.hr - a.hr).slice(0, 5);
   const rbiLeaders = [...hitters].sort((a, b) => b.rbi - a.rbi).slice(0, 5);
@@ -173,6 +180,37 @@ export default async function TeamPage({ params }: { params: Promise<{ abbr: str
           {stat("Div Rank", `${ordinal(rank)}`)}
         </div>
       </header>
+
+      {teamGames.length > 0 && (
+        <section style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
+            <h2 style={{ margin: 0, fontSize: "1.25rem", textTransform: "uppercase", letterSpacing: ".03em" }}>Recent games</h2>
+            <Link href="/schedule" style={{ fontSize: ".85rem", color: "var(--accent)" }}>Full schedule →</Link>
+          </div>
+          <div className="grid-cards">
+            {teamGames.map((g) => {
+              const isHome = g.home === row.team;
+              const us = isHome ? g.hs : g.as;
+              const them = isHome ? g.as : g.hs;
+              const opp = isHome ? g.away : g.home;
+              const won = us != null && them != null && us > them;
+              const lost = us != null && them != null && us < them;
+              return (
+                <Link key={g.pk} href={`/game?pk=${g.pk}`} className="card" style={{ padding: ".8rem 1rem", display: "grid", gap: 4 }}>
+                  <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: ".85rem" }}>
+                      <span style={{ color: won ? "var(--accent-2)" : lost ? "var(--danger)" : "var(--muted)", fontWeight: 700 }}>{won ? "W" : lost ? "L" : "—"}</span>
+                      {" "}{isHome ? "vs" : "@"} {teamAbbr(opp)}
+                    </span>
+                    <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.1rem" }}>{us ?? "—"}–{them ?? "—"}</span>
+                  </span>
+                  <span style={{ fontSize: ".68rem", color: "var(--muted)" }}>{new Date(g.date + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric" })} · Box score →</span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <section style={{ display: "grid", gap: 12 }}>
         <h2 style={{ margin: 0, fontSize: "1.25rem", textTransform: "uppercase", letterSpacing: ".03em" }}>Top players</h2>
