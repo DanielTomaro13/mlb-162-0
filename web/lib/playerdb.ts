@@ -5,7 +5,7 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { GamePlayer } from "@/lib/games-data";
+import { type GamePlayer, NOTABLE_LIMIT } from "@/lib/games-data";
 import { slugify } from "@/lib/format";
 
 export interface ProfilePlayer extends GamePlayer {
@@ -22,9 +22,11 @@ export function allPlayers(): ProfilePlayer[] {
   return _all;
 }
 
-/** Players notable enough to deserve a statically-generated profile page. */
+/** Players notable enough to deserve a statically-generated profile page.
+ *  games.json is sorted by fame, so this is the top NOTABLE_LIMIT players — the
+ *  same set the box score checks before linking a player's name. */
 export function notablePlayers(): ProfilePlayer[] {
-  return allPlayers().filter((p) => p.fame >= 80).slice(0, 800);
+  return allPlayers().filter((p) => p.fame >= 60).slice(0, NOTABLE_LIMIT);
 }
 
 export function playerById(id: string): ProfilePlayer | null {

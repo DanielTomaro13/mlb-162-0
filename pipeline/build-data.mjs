@@ -432,9 +432,10 @@ async function main() {
         const h = g.teams?.home, a = g.teams?.away;
         if (!h?.team || !a?.team) continue;
         games.push({
+          pk: g.gamePk,
           date: g.officialDate || d.date,
           status: g.status?.abstractGameState || "",
-          home: h.team.name, away: a.team.name,
+          home: h.team.name, away: a.team.name, homeId: h.team.id, awayId: a.team.id,
           hs: h.score ?? null, as: a.score ?? null,
           homeWin: h.isWinner ?? null, awayWin: a.isWinner ?? null,
         });

@@ -12,7 +12,8 @@ export interface LadderRow {
   pct: number; pts: number; pd: number; streak?: string;
 }
 export interface GameResult {
-  date: string; status: string; home: string; away: string;
+  pk?: number; date: string; status: string; home: string; away: string;
+  homeId?: number; awayId?: number;
   hs: number | null; as: number | null;
   homeWin: boolean | null; awayWin: boolean | null;
 }

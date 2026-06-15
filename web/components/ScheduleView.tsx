@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { loadResults, type Results, type GameResult } from "@/lib/data";
 import { teamColors } from "@/lib/teams";
 
@@ -59,11 +60,30 @@ function GameCard({ g }: { g: GameResult }) {
   // A "Final" with null scores is an upstream data gap (postponed / no result).
   const played = g.status === "Final" && g.hs != null && g.as != null;
   const label = g.status === "Final" && !played ? "No result" : !played ? g.status : "";
-  return (
-    <div className="card" style={{ padding: ".8rem 1rem", display: "grid", gap: 6 }}>
+  const inner = (
+    <>
       <Row name={g.away} score={g.as} win={g.awayWin} played={played} />
       <Row name={g.home} score={g.hs} win={g.homeWin} played={played} />
-      {label && <div style={{ fontSize: ".68rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>{label}</div>}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {label && <span style={{ fontSize: ".68rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>{label}</span>}
+        {g.pk != null && (
+          <span style={{ marginLeft: "auto", fontSize: ".68rem", color: "var(--accent)", textTransform: "uppercase", letterSpacing: ".05em" }}>
+            Box score →
+          </span>
+        )}
+      </div>
+    </>
+  );
+  if (g.pk != null) {
+    return (
+      <Link href={`/game?pk=${g.pk}`} className="card" style={{ padding: ".8rem 1rem", display: "grid", gap: 6, textDecoration: "none", color: "inherit" }}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <div className="card" style={{ padding: ".8rem 1rem", display: "grid", gap: 6 }}>
+      {inner}
     </div>
   );
 }

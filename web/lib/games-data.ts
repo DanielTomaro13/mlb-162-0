@@ -54,6 +54,12 @@ export interface GamesData {
   strengthsBySeason: Record<string, number[]>;
 }
 
+/** How many of the top players (by fame) get a statically-generated profile page.
+ *  Shared by playerdb (which builds the pages) and any client that links to them
+ *  (e.g. the box score) so links never point at a non-existent page. games.json
+ *  is already sorted by fame, so "the first NOTABLE_LIMIT" is that set. */
+export const NOTABLE_LIMIT = 1500;
+
 const V = process.env.NEXT_PUBLIC_DATA_VERSION || "dev";
 let _cache: GamesData | null = null;
 export async function loadGamesData(): Promise<GamesData> {
