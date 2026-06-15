@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { loadPlayers, type ClientPlayer } from "@/lib/games-data";
+import { loadPlayers, NOTABLE_LIMIT, type ClientPlayer } from "@/lib/games-data";
 import { teamColors } from "@/lib/teams";
 import { avg3 } from "@/lib/format";
 
@@ -31,6 +31,7 @@ const PIT_BOARDS: Board[] = [
 export default function StatsBoards() {
   const [players, setPlayers] = useState<ProfilePlayer[]>([]);
   useEffect(() => { loadPlayers().then(setPlayers); }, []);
+  const notable = useMemo(() => new Set(players.slice(0, NOTABLE_LIMIT).map((p) => p.id)), [players]);
   const [kind, setKind] = useState<"bat" | "pit">("bat");
   const [team, setTeam] = useState("All teams");
   const teams = useMemo(() => ["All teams", ...Array.from(new Set(players.map((p) => p.team))).sort()], [players]);
@@ -71,7 +72,11 @@ export default function StatsBoards() {
                     <li key={p.id} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: ".86rem" }}>
                       <span style={{ width: 16, color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: ".75rem" }}>{i + 1}</span>
                       <span style={{ width: 7, height: 7, borderRadius: 2, background: c1, flexShrink: 0 }} />
-                      <Link href={`/players/${p.id}/${p.slug}`} style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</Link>
+                      {notable.has(p.id) ? (
+                        <Link href={`/players/${p.id}/${p.slug}`} style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</Link>
+                      ) : (
+                        <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                      )}
                       <span style={{ fontFamily: "var(--font-cond)", color: "var(--gold)" }}>{b.fmt ? b.fmt(v) : v}</span>
                     </li>
                   );

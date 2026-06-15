@@ -394,7 +394,7 @@ async function main() {
         const teamName = meta.name || tr.team?.name || `Team ${tr.team?.id}`;
         const w = num(tr.wins), l = num(tr.losses);
         rows.push({
-          team: teamName,
+          team: teamName, id: tr.team?.id,
           abbr: meta.abbr, league: meta.league, division: meta.division,
           p: w + l, w, l, pf: num(tr.runsScored), pa: num(tr.runsAllowed),
           pct: +(num(tr.winningPercentage)).toFixed(3),

@@ -7,7 +7,7 @@ const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 export const DATA_VERSION = process.env.NEXT_PUBLIC_DATA_VERSION || "dev";
 
 export interface LadderRow {
-  team: string; abbr?: string; league?: number; division?: string;
+  team: string; id?: number; abbr?: string; league?: number; division?: string;
   p: number; w: number; l: number; pf: number; pa: number;
   pct: number; pts: number; pd: number; streak?: string;
 }

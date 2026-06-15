@@ -2,11 +2,12 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { pageMeta, breadcrumbJsonLd, SITE } from "@/lib/seo";
 import { serverResults } from "@/lib/serverdata";
-import { allPlayers, type ProfilePlayer } from "@/lib/playerdb";
+import { allPlayers, notableIdSet, type ProfilePlayer } from "@/lib/playerdb";
 import { teamColors, teamAbbr, leagueName, leagueShort } from "@/lib/teams";
 import { avg3 } from "@/lib/format";
 import type { LadderRow } from "@/lib/data";
 import JsonLd from "@/components/JsonLd";
+import TeamSchedule from "@/components/TeamSchedule";
 
 export const dynamicParams = false;
 
@@ -88,13 +89,16 @@ export default async function TeamPage({ params }: { params: Promise<{ abbr: str
   const { rank, size } = divisionRank(row, rows);
   const divName = (row.division ?? "").split(/\s+/).pop() ?? "";
 
+  const notable = notableIdSet();
   const players = teamPlayers(row.team);
   const hitters = players.filter((p) => p.kind === "bat");
   const pitchers = players.filter((p) => p.kind === "pit");
   const top = [...players].sort((a, b) => b.rating - a.rating).slice(0, 12);
 
   // This franchise's recent games (most recent first) — link to the box scores.
-  const schedule = serverResults().schedule;
+  const results = serverResults();
+  const schedule = results.schedule;
+  const liveSeason = results.liveSeason;
   const teamGames = schedule.results
     .filter((g) => (g.home === row.team || g.away === row.team) && g.pk)
     .slice(-8)
@@ -212,22 +216,37 @@ export default async function TeamPage({ params }: { params: Promise<{ abbr: str
         </section>
       )}
 
+      {row.id != null && (
+        <section style={{ display: "grid", gap: 12 }}>
+          <h2 style={{ margin: 0, fontSize: "1.25rem", textTransform: "uppercase", letterSpacing: ".03em" }}>Full season schedule</h2>
+          <TeamSchedule teamId={row.id ?? 0} teamName={row.team} season={liveSeason} />
+        </section>
+      )}
+
       <section style={{ display: "grid", gap: 12 }}>
         <h2 style={{ margin: 0, fontSize: "1.25rem", textTransform: "uppercase", letterSpacing: ".03em" }}>Top players</h2>
         {top.length === 0 ? (
           <p style={{ color: "var(--muted)" }}>No rated players found for this franchise yet.</p>
         ) : (
           <div className="grid-cards">
-            {top.map((p) => (
-              <Link key={p.id} href={`/players/${p.id}/${p.slug}`} className="card" style={{ padding: "1rem", display: "grid", gap: 4 }}>
-                <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</strong>
-                  <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.3rem", color: p.rating >= 90 ? "var(--gold)" : "var(--text)" }}>{p.rating}</span>
-                </span>
-                <span style={{ fontSize: ".78rem", color: "var(--muted)" }}>{p.posName}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: ".7rem", color: "var(--muted)" }}>{playerLine(p)}</span>
-              </Link>
-            ))}
+            {top.map((p) => {
+              const inner = (
+                <>
+                  <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</strong>
+                    <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.3rem", color: p.rating >= 90 ? "var(--gold)" : "var(--text)" }}>{p.rating}</span>
+                  </span>
+                  <span style={{ fontSize: ".78rem", color: "var(--muted)" }}>{p.posName}</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: ".7rem", color: "var(--muted)" }}>{playerLine(p)}</span>
+                </>
+              );
+              const cardStyle = { padding: "1rem", display: "grid", gap: 4 } as const;
+              return notable.has(p.id) ? (
+                <Link key={p.id} href={`/players/${p.id}/${p.slug}`} className="card" style={cardStyle}>{inner}</Link>
+              ) : (
+                <div key={p.id} className="card" style={cardStyle}>{inner}</div>
+              );
+            })}
           </div>
         )}
       </section>
@@ -244,9 +263,7 @@ export default async function TeamPage({ params }: { params: Promise<{ abbr: str
           {topRated && (
             <p style={{ margin: 0, color: "var(--muted)", fontSize: ".85rem" }}>
               Top-rated all-time:{" "}
-              <Link href={`/players/${topRated.id}/${topRated.slug}`} style={{ color: "var(--accent)" }}>
-                {topRated.name}
-              </Link>{" "}
+              <PlayerName p={topRated} notable={notable} style={{ color: "var(--accent)" }} />{" "}
               ({topRated.posName}, {topRated.rating}).
             </p>
           )}
@@ -257,11 +274,11 @@ export default async function TeamPage({ params }: { params: Promise<{ abbr: str
         <section style={{ display: "grid", gap: 12 }}>
           <h2 style={{ margin: 0, fontSize: "1.25rem", textTransform: "uppercase", letterSpacing: ".03em" }}>Hitting leaders</h2>
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))" }}>
-            <Board title="Home runs" rows={hrLeaders} value={(p) => String(p.hr)} unit="HR" />
-            <Board title="RBI" rows={rbiLeaders} value={(p) => String(p.rbi)} unit="RBI" />
-            <Board title="Hits" rows={hitsLeaders} value={(p) => String(p.hits)} unit="H" />
-            <Board title="Stolen bases" rows={sbLeaders} value={(p) => String(p.sb)} unit="SB" />
-            <Board title="OPS" rows={opsLeaders} value={(p) => avg3(p.ops)} unit="OPS" />
+            <Board title="Home runs" rows={hrLeaders} value={(p) => String(p.hr)} unit="HR" notable={notable} />
+            <Board title="RBI" rows={rbiLeaders} value={(p) => String(p.rbi)} unit="RBI" notable={notable} />
+            <Board title="Hits" rows={hitsLeaders} value={(p) => String(p.hits)} unit="H" notable={notable} />
+            <Board title="Stolen bases" rows={sbLeaders} value={(p) => String(p.sb)} unit="SB" notable={notable} />
+            <Board title="OPS" rows={opsLeaders} value={(p) => avg3(p.ops)} unit="OPS" notable={notable} />
           </div>
         </section>
       )}
@@ -270,11 +287,11 @@ export default async function TeamPage({ params }: { params: Promise<{ abbr: str
         <section style={{ display: "grid", gap: 12 }}>
           <h2 style={{ margin: 0, fontSize: "1.25rem", textTransform: "uppercase", letterSpacing: ".03em" }}>Pitching leaders</h2>
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))" }}>
-            <Board title="Wins" rows={winLeaders} value={(p) => String(p.w)} unit="W" />
-            <Board title="Strikeouts" rows={soLeaders} value={(p) => String(p.so)} unit="K" />
-            <Board title="Saves" rows={svLeaders} value={(p) => String(p.sv)} unit="SV" />
+            <Board title="Wins" rows={winLeaders} value={(p) => String(p.w)} unit="W" notable={notable} />
+            <Board title="Strikeouts" rows={soLeaders} value={(p) => String(p.so)} unit="K" notable={notable} />
+            <Board title="Saves" rows={svLeaders} value={(p) => String(p.sv)} unit="SV" notable={notable} />
             {eraLeaders.length > 0 && (
-              <Board title="ERA (200+ IP)" rows={eraLeaders} value={(p) => p.eraAvg.toFixed(2)} unit="ERA" />
+              <Board title="ERA (200+ IP)" rows={eraLeaders} value={(p) => p.eraAvg.toFixed(2)} unit="ERA" notable={notable} />
             )}
           </div>
         </section>
@@ -307,11 +324,13 @@ function Board({
   rows,
   value,
   unit,
+  notable,
 }: {
   title: string;
   rows: ProfilePlayer[];
   value: (p: ProfilePlayer) => string;
   unit: string;
+  notable: Set<number>;
 }) {
   return (
     <div className="card" style={{ padding: "1rem", display: "grid", gap: 8 }}>
@@ -322,9 +341,9 @@ function Board({
         {rows.map((p, i) => (
           <li key={p.id} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: ".85rem" }}>
             <span style={{ width: 16, color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: ".72rem" }}>{i + 1}</span>
-            <Link href={`/players/${p.id}/${p.slug}`} style={{ flex: 1, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {p.name}
-            </Link>
+            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <PlayerName p={p} notable={notable} />
+            </span>
             <span style={{ fontFamily: "var(--font-cond)", color: "var(--text)" }}>{value(p)}</span>
             <span style={{ color: "var(--muted)", fontSize: ".7rem" }}>{unit}</span>
           </li>
@@ -332,4 +351,12 @@ function Board({
       </ol>
     </div>
   );
+}
+
+/** A player's name: a link to their profile if a page exists, else plain text. */
+function PlayerName({ p, notable, style }: { p: ProfilePlayer; notable: Set<number>; style?: React.CSSProperties }) {
+  if (notable.has(p.id)) {
+    return <Link href={`/players/${p.id}/${p.slug}`} style={{ color: "var(--text)", ...style }}>{p.name}</Link>;
+  }
+  return <span style={{ color: "var(--text)", ...style }}>{p.name}</span>;
 }

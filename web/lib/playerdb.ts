@@ -32,3 +32,12 @@ export function notablePlayers(): ProfilePlayer[] {
 export function playerById(id: string): ProfilePlayer | null {
   return allPlayers().find((p) => String(p.id) === String(id)) ?? null;
 }
+
+/** The set of player ids that actually have a static profile page — used to
+ *  decide whether a player's name should be a link or plain text (so we never
+ *  link to a page that wasn't generated). */
+let _notableIds: Set<number> | null = null;
+export function notableIdSet(): Set<number> {
+  if (!_notableIds) _notableIds = new Set(notablePlayers().map((p) => p.id));
+  return _notableIds;
+}

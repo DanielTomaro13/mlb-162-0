@@ -44,6 +44,28 @@ interface LineScore {
   inningState?: string;
   isTopInning?: boolean;
 }
+interface ApiPlayResult {
+  type?: string; event?: string; description?: string;
+  awayScore?: number; homeScore?: number; rbi?: number;
+}
+interface ApiPlayAbout {
+  halfInning?: string; inning?: number; isScoringPlay?: boolean;
+  hasOut?: boolean; captivatingIndex?: number;
+}
+interface ApiPlayMatchup {
+  batter?: { id?: number; fullName?: string };
+  pitcher?: { id?: number; fullName?: string };
+}
+interface ApiPlay {
+  result?: ApiPlayResult;
+  about?: ApiPlayAbout;
+  matchup?: ApiPlayMatchup;
+  atBatIndex?: number;
+}
+interface PlayByPlay {
+  allPlays?: ApiPlay[];
+  scoringPlays?: number[];
+}
 
 /* ----------------------------- helpers ---------------------------- */
 function num(v: unknown): number | null {
@@ -62,6 +84,9 @@ function isBoxScore(d: unknown): d is BoxScore {
 }
 function isLineScore(d: unknown): d is LineScore {
   return typeof d === "object" && d !== null;
+}
+function isPlayByPlay(d: unknown): d is PlayByPlay {
+  return typeof d === "object" && d !== null && Array.isArray((d as { allPlays?: unknown }).allPlays);
 }
 
 /** Players in the starting lineup order, falling back to batters list. */
@@ -86,6 +111,7 @@ export default function GameDetail() {
   const [pk, setPk] = useState<string | null>(null);
   const [box, setBox] = useState<BoxScore | null>(null);
   const [line, setLine] = useState<LineScore | null>(null);
+  const [pbp, setPbp] = useState<PlayByPlay | null>(null);
   const [notable, setNotable] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,12 +155,17 @@ export default function GameDetail() {
         if (!r.ok) throw new Error(`linescore ${r.status}`);
         return r.json() as Promise<unknown>;
       }),
+      // Play-by-play is optional — tolerate any failure so the page still renders.
+      fetch(`https://statsapi.mlb.com/api/v1/game/${pk}/playByPlay`)
+        .then((r) => (r.ok ? (r.json() as Promise<unknown>) : null))
+        .catch(() => null),
     ])
-      .then(([b, l]) => {
+      .then(([b, l, p]) => {
         if (cancelled) return;
         if (!isBoxScore(b)) throw new Error("Unexpected box score response.");
         setBox(b);
         setLine(isLineScore(l) ? l : null);
+        setPbp(isPlayByPlay(p) ? p : null);
         setLoading(false);
       })
       .catch((e: unknown) => {
@@ -214,7 +245,160 @@ export default function GameDetail() {
           <Link href="/schedule" style={{ color: "var(--accent)" }}>Back to the schedule →</Link>
         </p>
       )}
+
+      {/* Play-by-play — defaults to scoring plays; toggle for every plate appearance. */}
+      <PlayByPlaySection pbp={pbp} notable={notable} />
     </div>
+  );
+}
+
+/** True when this play scored a run (in the scoringPlays index or flagged by the API). */
+function isScoringPlay(p: ApiPlay, scoring: Set<number>): boolean {
+  const idx = num(p.atBatIndex);
+  if (idx != null && scoring.has(idx)) return true;
+  return p.about?.isScoringPlay === true;
+}
+
+/** "T7" / "B3" inning badge from halfInning + inning. */
+function inningBadge(about: ApiPlayAbout | undefined): string {
+  const inn = num(about?.inning);
+  if (inn == null) return "";
+  const half = str(about?.halfInning).toLowerCase();
+  const prefix = half === "bottom" ? "B" : "T";
+  return `${prefix}${inn}`;
+}
+
+function PlayByPlaySection({ pbp, notable }: { pbp: PlayByPlay | null; notable: Set<number> }) {
+  const [showAll, setShowAll] = useState(false);
+
+  const allPlays = pbp?.allPlays ?? [];
+  const scoring = new Set<number>((pbp?.scoringPlays ?? []).filter((n): n is number => typeof n === "number"));
+
+  // Only keep plays with a usable description.
+  const usable = allPlays.filter((p) => str(p.result?.description).trim() !== "");
+  if (usable.length === 0) return null;
+
+  const scoringPlays = usable.filter((p) => isScoringPlay(p, scoring));
+  const rows = showAll ? usable : scoringPlays;
+  // Most-recent first.
+  const ordered = [...rows].reverse();
+
+  return (
+    <section style={{ display: "grid", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <h2 style={{ margin: 0, fontSize: "1.1rem", borderLeft: "3px solid var(--accent)", paddingLeft: 10 }}>
+          Play-by-play
+        </h2>
+        <div style={{ display: "flex", gap: 6 }}>
+          <PbpToggle label="Scoring plays" active={!showAll} onClick={() => setShowAll(false)} />
+          <PbpToggle label="All plays" active={showAll} onClick={() => setShowAll(true)} />
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: ".5rem .25rem" }}>
+        {ordered.length === 0 ? (
+          <p style={{ color: "var(--muted)", margin: 0, padding: ".5rem .75rem" }}>
+            No scoring plays in this game.
+          </p>
+        ) : (
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid" }}>
+            {ordered.map((p, i) => (
+              <PlayRow
+                key={num(p.atBatIndex) ?? i}
+                play={p}
+                scored={isScoringPlay(p, scoring)}
+                notable={notable}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function PbpToggle({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="chip"
+      style={{
+        cursor: "pointer",
+        fontSize: ".72rem",
+        borderColor: active ? "var(--accent)" : "var(--border)",
+        background: active ? "var(--accent)" : "transparent",
+        color: active ? "#fff" : "var(--muted)",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function PlayRow({ play, scored, notable }: { play: ApiPlay; scored: boolean; notable: Set<number> }) {
+  const badge = inningBadge(play.about);
+  const desc = str(play.result?.description);
+  const away = num(play.result?.awayScore);
+  const home = num(play.result?.homeScore);
+  const batterId = num(play.matchup?.batter?.id);
+  const batterName = str(play.matchup?.batter?.fullName);
+  const linkBatter = batterId != null && notable.has(batterId) && batterName !== "";
+
+  return (
+    <li
+      style={{
+        display: "flex",
+        gap: 10,
+        alignItems: "baseline",
+        padding: ".5rem .75rem",
+        borderTop: "1px solid var(--border)",
+      }}
+    >
+      {badge && (
+        <span
+          style={{
+            flexShrink: 0,
+            fontFamily: "var(--font-cond)",
+            fontSize: ".7rem",
+            minWidth: 26,
+            textAlign: "center",
+            padding: "1px 4px",
+            borderRadius: 4,
+            border: "1px solid var(--border)",
+            color: "var(--muted)",
+          }}
+        >
+          {badge}
+        </span>
+      )}
+      <div style={{ display: "grid", gap: 2, flex: 1, minWidth: 0 }}>
+        <span style={{ fontSize: ".88rem", lineHeight: 1.35 }}>
+          {desc}
+          {linkBatter && (
+            <>
+              {" "}
+              <Link href={`/players/${batterId}/${slugify(batterName)}`} style={{ color: "var(--accent)", fontSize: ".78rem" }}>
+                {batterName} →
+              </Link>
+            </>
+          )}
+        </span>
+      </div>
+      {scored && away != null && home != null && (
+        <span
+          style={{
+            flexShrink: 0,
+            fontFamily: "var(--font-cond)",
+            fontSize: ".95rem",
+            fontWeight: 700,
+            color: "var(--accent-2)",
+          }}
+        >
+          {away}–{home}
+        </span>
+      )}
+    </li>
   );
 }
 

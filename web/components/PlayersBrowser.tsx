@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { loadPlayers, type ClientPlayer } from "@/lib/games-data";
+import { loadPlayers, NOTABLE_LIMIT, type ClientPlayer } from "@/lib/games-data";
 import { teamColors } from "@/lib/teams";
 import { avg3, POS_GROUP } from "@/lib/format";
 
@@ -51,6 +51,8 @@ export default function PlayersBrowser() {
   const [players, setPlayers] = useState<ProfilePlayer[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => { loadPlayers().then((p) => { setPlayers(p); setLoading(false); }); }, []);
+  // games.json is fame-sorted; the first NOTABLE_LIMIT have static profile pages.
+  const notable = useMemo(() => new Set(players.slice(0, NOTABLE_LIMIT).map((p) => p.id)), [players]);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("All");
   const [pos, setPos] = useState("All");
@@ -102,8 +104,8 @@ export default function PlayersBrowser() {
       <div className="grid-cards">
         {shown.map((p) => {
           const [c1] = teamColors(p.team);
-          return (
-            <Link key={p.id} href={`/players/${p.id}/${p.slug}`} className="card" style={{ padding: "1rem", display: "grid", gap: 4 }}>
+          const inner = (
+            <>
               <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</strong>
                 <span style={{ fontFamily: "var(--font-cond)", fontSize: "1.3rem", color: p.rating >= 90 ? "var(--gold)" : "var(--text)" }}>{p.rating}</span>
@@ -112,7 +114,13 @@ export default function PlayersBrowser() {
                 <span style={{ width: 8, height: 8, borderRadius: 2, background: c1 }} />{p.team}
               </span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: ".7rem", color: "var(--muted)" }}>{statLine(p)}</span>
-            </Link>
+            </>
+          );
+          const cardStyle = { padding: "1rem", display: "grid", gap: 4 } as const;
+          return notable.has(p.id) ? (
+            <Link key={p.id} href={`/players/${p.id}/${p.slug}`} className="card" style={cardStyle}>{inner}</Link>
+          ) : (
+            <div key={p.id} className="card" style={cardStyle}>{inner}</div>
           );
         })}
       </div>
