@@ -14,6 +14,9 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # The MLB-Modelling Python repo (override with MODEL_DIR if it lives elsewhere).
 MODEL_DIR="${MODEL_DIR:-$HOME/Documents/Projects/MLB-Model}"
+# Shared bookmaker creds (TAB_CLIENT_ID/SECRET, DABBLE_* …) — the same .env the other
+# sports use. Override with CREDS_ENV. MLB-Model/.env (if present) is also sourced.
+CREDS_ENV="${CREDS_ENV:-$HOME/Documents/Projects/sportsdata-agents/.env}"
 cd "$REPO" || exit 1
 LOG="$REPO/scripts/odds-cron.log"
 ts() { date "+%Y-%m-%d %H:%M:%S"; }
@@ -27,7 +30,11 @@ git pull --rebase --autostash origin main || { echo "$(ts) pull failed"; exit 1;
 ( cd "$MODEL_DIR" || exit 1
   # Pull CI's latest model (fresh profiles + fixtures) so odds price against current data.
   git pull --rebase --autostash 2>/dev/null || true
-  [ -f .env ] && { set -a; . ./.env; set +a; }
+  set -a
+  [ -f "$CREDS_ENV" ] && . "$CREDS_ENV"   # shared TAB/Dabble creds (other sports use this)
+  [ -f .env ] && . ./.env                 # any MLB-specific overrides
+  set +a
+  echo "$(ts) creds: TAB=${TAB_CLIENT_ID:+set} DABBLE=${DABBLE_AUTH:+set}"
   python3 -m src.predict   # refresh predictions from the current profiles
   python3 -m src.odds
 ) || { echo "$(ts) odds scrape failed"; exit 1; }
