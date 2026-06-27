@@ -20,6 +20,7 @@ function rlCell(g: GameProjection, side: "home" | "away") {
 function GameCard({ g }: { g: GameProjection }) {
   const total = get(g, "total"), f5ml = get(g, "f5_ml"), f5t = get(g, "f5_total"), tt = get(g, "team_total");
   const nrfi = get(g, "fi")?.selections?.find((s) => s.label.includes("NRFI"));
+  const mainTotal = (total?.lines || []).find((l) => l.line === 8.5) || (total?.lines || [])[Math.floor((total?.lines?.length || 1) / 2)];
   const tLines = (total?.lines || []).filter((l) => [7.5, 8.5, 9.5].includes(l.line));
   const ttHome = (tt?.lines || []).find((l) => l.side === "home" && l.line === 4.5);
   const ttAway = (tt?.lines || []).find((l) => l.side === "away" && l.line === 4.5);
@@ -31,7 +32,10 @@ function GameCard({ g }: { g: GameProjection }) {
     <div style={S.card}>
       <div style={S.cardHead}>
         <strong>{g.awayAbbr} @ {g.homeAbbr}</strong>
-        <span style={S.mut}>{g.date} · proj total {g.total_mean}</span>
+        <span style={S.mut}>
+          {g.date} · proj total <b style={{ color: "var(--text)" }}>{g.total_mean}</b>
+          {mainTotal && <> · O/U {mainTotal.line} <b style={{ color: "var(--accent-2)" }}>O {pct(mainTotal.over)}</b> / U {pct(mainTotal.under)}</>}
+        </span>
       </div>
       <div style={S.tableWrap}>
         <table style={S.table}>

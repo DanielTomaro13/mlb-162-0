@@ -59,6 +59,10 @@ export default function PickemPage() {
     }
     return out
       .filter((r) => (haveDabble && !showAll ? r.posted : true))
+      // Keep Dabble-posted lines as-is. For the model-only fallback, only show lines a
+      // book would actually post — i.e. genuinely two-sided (the over has a real shot),
+      // which also strips the trivial "0.09 RBIs → under 0.5" noise.
+      .filter((r) => r.posted || (r.pOver >= 0.3 && r.pOver <= 0.82))
       .filter((r) => stat === "all" || r.stat === stat)
       .filter((r) => game === "all" || r.game === game)
       .filter((r) => !q || r.player.toLowerCase().includes(q.toLowerCase()))
