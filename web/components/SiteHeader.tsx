@@ -4,6 +4,8 @@ const NAV = [
   { href: "/play", label: "Play" },
   { href: "/games", label: "Games" },
   { href: "/standings", label: "Standings" },
+  { href: "/model", label: "Model" },
+  { href: "/value", label: "Value" },
   { href: "/teams", label: "Teams" },
   { href: "/players", label: "Players" },
   { href: "/schedule", label: "Schedule" },
