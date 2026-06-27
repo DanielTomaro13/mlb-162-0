@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dirname, "..", "web", "public", "data");
-const FILES = ["predictions", "odds", "ratings", "meta"];
+const FILES = ["predictions", "odds", "ratings", "meta", "pickem-lines"];
 const RAW = "https://raw.githubusercontent.com/DanielTomaro13/MLB-Modelling/main/docs/data";
 
 await mkdir(OUT, { recursive: true });

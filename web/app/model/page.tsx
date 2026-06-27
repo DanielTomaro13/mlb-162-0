@@ -17,21 +17,29 @@ function rl(g: GameProjection, side: "home" | "away") {
   return s ? `${pct(s.prob)} · ${odds(s.fair)}` : "—";
 }
 
+const fld = { background: "var(--bg-soft)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 10px", fontSize: 13.5 } as const;
+
 export default function ModelGamesPage() {
   const [data, setData] = useState<Predictions | null>(null);
   const [meta, setMeta] = useState<ModelMeta | null>(null);
   const [err, setErr] = useState(false);
+  const [date, setDate] = useState("all");
+  const [q, setQ] = useState("");
 
   useEffect(() => {
     loadPredictions().then((d) => (d ? setData(d) : setErr(true)));
     loadModelMeta().then(setMeta);
   }, []);
 
+  const dates = useMemo(() => Array.from(new Set((data?.games || []).map((g) => g.date))).sort(), [data]);
   const byDate = useMemo(() => {
     const m: Record<string, GameProjection[]> = {};
-    (data?.games || []).forEach((g) => (m[g.date] ||= []).push(g));
+    (data?.games || [])
+      .filter((g) => date === "all" || g.date === date)
+      .filter((g) => !q || `${g.home} ${g.away} ${g.homeAbbr} ${g.awayAbbr} ${g.homePitcher} ${g.awayPitcher}`.toLowerCase().includes(q.toLowerCase()))
+      .forEach((g) => (m[g.date] ||= []).push(g));
     return m;
-  }, [data]);
+  }, [data, date, q]);
 
   return (
     <main style={{ ...wrap, paddingTop: 24, paddingBottom: 48 }}>
@@ -41,6 +49,17 @@ export default function ModelGamesPage() {
         {meta && ` Season ${meta.season} · updated ${meta.generated}.`}
       </p>
       <ModelNav />
+
+      {data && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", margin: "0 0 14px", padding: "11px 14px", border: "1px solid var(--border)", borderRadius: 12, background: "var(--panel)" }}>
+          <select style={fld} value={date} onChange={(e) => setDate(e.target.value)}>
+            <option value="all">All dates</option>
+            {dates.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <input style={{ ...fld, minWidth: 180 }} type="search" placeholder="Search team or pitcher…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <span style={{ marginLeft: "auto", color: "var(--muted)", fontSize: 12.5 }}>{Object.values(byDate).reduce((n, a) => n + a.length, 0)} games</span>
+        </div>
+      )}
 
       {err && <p style={{ color: "var(--muted)" }}>Model feed unavailable.</p>}
       {!data && !err && <p style={{ color: "var(--muted)" }}>Loading…</p>}
