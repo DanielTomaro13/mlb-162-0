@@ -20,6 +20,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run data
+      - name: Sync the statistical model (MLB-Modelling pipeline output)
+        run: node scripts/sync-model.mjs
       - name: Commit refreshed data
         run: |
           git config user.name "github-actions[bot]"
