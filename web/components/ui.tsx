@@ -1,7 +1,26 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import ModelNav from "@/components/ModelNav";
+
+/* ---- click-to-sort helper ---- */
+export type SortState = { key: string; dir: 1 | -1 };
+export function useSort(initialKey: string, initialDir: 1 | -1 = -1) {
+  const [sort, setSort] = useState<SortState>({ key: initialKey, dir: initialDir });
+  const toggle = (key: string) => setSort((s) => (s.key === key ? { key, dir: (s.dir * -1) as 1 | -1 } : { key, dir: -1 }));
+  function sorted<T>(rows: T[], accessors: Record<string, (r: T) => string | number | null | undefined>): T[] {
+    const acc = accessors[sort.key];
+    if (!acc) return rows;
+    return [...rows].sort((a, b) => {
+      const va = acc(a), vb = acc(b);
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      if (typeof va === "number" && typeof vb === "number") return (va - vb) * sort.dir;
+      return String(va).localeCompare(String(vb)) * sort.dir;
+    });
+  }
+  return { sort, toggle, sorted };
+}
 
 /* Shared visual language for every model page — one place to keep them consistent. */
 export const S: Record<string, CSSProperties> = {
@@ -34,10 +53,28 @@ export function pill(text: string, tone: "mut" | "pos" | "accent" = "mut"): CSSP
     background: "var(--panel-2)", border: "1px solid var(--border)", color: colors[tone] } as CSSProperties;
 }
 
+/** A sortable <th>. `sortKey` ties it to a useSort accessor; click toggles direction. */
+export function Th({ label, sortKey, sort, toggle, align = "right" }:
+  { label: string; sortKey: string; sort: SortState; toggle: (k: string) => void; align?: "left" | "right" }) {
+  const on = sort.key === sortKey;
+  return (
+    <th
+      onClick={() => toggle(sortKey)}
+      style={{ ...(align === "left" ? S.thL : S.th), cursor: "pointer", userSelect: "none", color: on ? "var(--text)" : "var(--muted)" }}
+      title="Sort"
+    >
+      {label}{on ? (sort.dir < 0 ? " ▾" : " ▴") : ""}
+    </th>
+  );
+}
+
 export function Shell({ title, blurb, children }: { title: string; blurb: ReactNode; children: ReactNode }) {
   return (
     <main style={S.page}>
-      <h1 style={S.h1}>{title}</h1>
+      {/* baseball-stitch accent under the title */}
+      <h1 style={S.h1}><span aria-hidden style={{ marginRight: 8 }}>⚾</span>{title}</h1>
+      <div style={{ height: 3, width: 132, margin: "2px 0 10px", borderRadius: 3,
+        backgroundImage: "repeating-linear-gradient(90deg, var(--accent) 0 9px, transparent 9px 15px)" }} aria-hidden />
       <p style={S.blurb}>{blurb}</p>
       <ModelNav />
       {children}

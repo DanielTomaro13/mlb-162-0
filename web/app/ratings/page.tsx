@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shell, S } from "@/components/ui";
+import { Shell, S, Th, useSort } from "@/components/ui";
 import { loadRatings, type Ratings } from "@/lib/modeldb";
 
 export default function RatingsPage() {
   const [data, setData] = useState<Ratings | null>(null);
+  const { sort, toggle, sorted } = useSort("elo");
   useEffect(() => { loadRatings().then(setData); }, []);
+  const teams = sorted(data?.teams || [], {
+    rank: (t) => t.rank, team: (t) => t.name, division: (t) => t.division, elo: (t) => t.elo, played: (t) => t.played,
+  });
 
   return (
     <Shell title="The Model · Ratings" blurb="Chronological team Elo — home-field adjusted, margin-of-victory weighted, and regressed between seasons. Higher is stronger.">
@@ -17,10 +21,16 @@ export default function RatingsPage() {
           <div style={S.tableWrap}>
             <table style={S.table}>
               <thead>
-                <tr><th style={S.th}>#</th><th style={S.thL}>Team</th><th style={S.thL}>Division</th><th style={S.th}>Elo</th><th style={S.th}>Games</th></tr>
+                <tr>
+                  <Th label="#" sortKey="rank" sort={sort} toggle={toggle} />
+                  <Th label="Team" sortKey="team" sort={sort} toggle={toggle} align="left" />
+                  <Th label="Division" sortKey="division" sort={sort} toggle={toggle} align="left" />
+                  <Th label="Elo" sortKey="elo" sort={sort} toggle={toggle} />
+                  <Th label="Games" sortKey="played" sort={sort} toggle={toggle} />
+                </tr>
               </thead>
               <tbody>
-                {data.teams.map((t) => (
+                {teams.map((t) => (
                   <tr key={t.teamId}>
                     <td style={{ ...S.td, color: "var(--muted)" }}>{t.rank}</td>
                     <td style={S.tdL}><b>{t.name}</b> <span style={{ fontSize: 11, padding: "1px 7px", borderRadius: 999, background: "var(--panel-2)", border: "1px solid var(--border)", color: "var(--muted)" }}>{t.abbr}</span></td>

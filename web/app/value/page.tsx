@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Shell, FilterBar, S } from "@/components/ui";
+import { Shell, FilterBar, S, Th, useSort } from "@/components/ui";
 import { loadOdds, odds, pct, BOOK_LABEL, type Odds, type OddsSelection } from "@/lib/modeldb";
 
 const MARKETS = [["all", "All markets"], ["ml", "Moneyline"], ["rl", "Run line"], ["total", "Totals"], ["f5_ml", "First 5 winner"], ["f5_total", "First 5 total"], ["fi", "1st inning"], ["team_total", "Team totals"]] as const;
@@ -14,10 +14,11 @@ export default function ValuePage() {
   const [market, setMarket] = useState("all");
   const [posOnly, setPosOnly] = useState(true);
   const [q, setQ] = useState("");
+  const { sort, toggle, sorted } = useSort("ev");
 
   useEffect(() => { loadOdds().then(setData); }, []);
 
-  const rows = useMemo<Row[]>(() => {
+  const filtered = useMemo<Row[]>(() => {
     const all: Row[] = (data?.games || []).flatMap((g) =>
       g.markets.flatMap((m) => m.selections.map((s) => ({ ...s, mkt: m.key, home: g.home, away: g.away, homeAbbr: g.homeAbbr, awayAbbr: g.awayAbbr })))
     );
@@ -26,9 +27,12 @@ export default function ValuePage() {
       .filter((r) => book === "all" || r.books[book] != null)
       .map((r) => (book === "all" ? r : { ...r, best: { book, price: r.books[book] }, ev: +(r.model * r.books[book] - 1).toFixed(4) }))
       .filter((r) => !posOnly || r.ev > 0)
-      .filter((r) => !q || `${r.homeAbbr} ${r.awayAbbr} ${r.label}`.toLowerCase().includes(q.toLowerCase()))
-      .sort((a, b) => b.ev - a.ev);
+      .filter((r) => !q || `${r.homeAbbr} ${r.awayAbbr} ${r.label}`.toLowerCase().includes(q.toLowerCase()));
   }, [data, book, market, posOnly, q]);
+  const rows = sorted(filtered, {
+    game: (r) => r.homeAbbr, selection: (r) => r.label, model: (r) => r.model,
+    fair: (r) => r.fair ?? 0, best: (r) => r.best?.price ?? 0, book: (r) => r.best?.book ?? "", ev: (r) => r.ev,
+  });
 
   return (
     <Shell
@@ -58,12 +62,13 @@ export default function ValuePage() {
               <table style={S.table}>
                 <thead>
                   <tr>
-                    <th style={S.thL}>Game</th><th style={S.thL}>Selection</th>
-                    <th style={S.th} title="Model win probability">Model</th>
-                    <th style={S.th} title="Model probability as decimal odds">Fair</th>
-                    <th style={S.th} title="Best available price">Best</th>
-                    <th style={S.th}>Book</th>
-                    <th style={S.th} title="Expected value vs the best price">EV</th>
+                    <Th label="Game" sortKey="game" sort={sort} toggle={toggle} align="left" />
+                    <Th label="Selection" sortKey="selection" sort={sort} toggle={toggle} align="left" />
+                    <Th label="Model" sortKey="model" sort={sort} toggle={toggle} />
+                    <Th label="Fair" sortKey="fair" sort={sort} toggle={toggle} />
+                    <Th label="Best" sortKey="best" sort={sort} toggle={toggle} />
+                    <Th label="Book" sortKey="book" sort={sort} toggle={toggle} />
+                    <Th label="EV" sortKey="ev" sort={sort} toggle={toggle} />
                   </tr>
                 </thead>
                 <tbody>

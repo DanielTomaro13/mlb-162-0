@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Shell, FilterBar, S } from "@/components/ui";
+import { Shell, FilterBar, S, Th, useSort } from "@/components/ui";
 import { loadPredictions, loadPickem, poissonOver, pct, type Predictions, type Pickem } from "@/lib/modeldb";
 
 const norm = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^a-z\s]/g, "").replace(/\s+/g, " ").trim();
@@ -18,6 +18,7 @@ export default function PickemPage() {
   const [game, setGame] = useState("all");
   const [q, setQ] = useState("");
   const [showAll, setShowAll] = useState(false);
+  const { sort, toggle, sorted } = useSort("conf");
 
   useEffect(() => {
     loadPredictions().then(setPred);
@@ -65,9 +66,12 @@ export default function PickemPage() {
       .filter((r) => r.posted || (r.pOver >= 0.3 && r.pOver <= 0.82))
       .filter((r) => stat === "all" || r.stat === stat)
       .filter((r) => game === "all" || r.game === game)
-      .filter((r) => !q || r.player.toLowerCase().includes(q.toLowerCase()))
-      .sort((a, b) => b.conf - a.conf);
+      .filter((r) => !q || r.player.toLowerCase().includes(q.toLowerCase()));
   }, [pred, posted, haveDabble, showAll, stat, game, q]);
+  const sortedRows = sorted(rows, {
+    player: (r) => r.player, game: (r) => r.game, stat: (r) => r.stat,
+    proj: (r) => r.mu, line: (r) => r.line, conf: (r) => r.conf,
+  });
 
   const stats = useMemo<string[]>(() => {
     if (!pred) return [];
@@ -109,12 +113,17 @@ export default function PickemPage() {
               <table style={S.table}>
                 <thead>
                   <tr>
-                    <th style={S.thL}>Player</th><th style={S.thL}>Game</th><th style={S.thL}>Stat</th>
-                    <th style={S.th}>Proj</th><th style={S.th}>Line</th><th style={S.thL}>Lean</th><th style={S.th}>Confidence</th>
+                    <Th label="Player" sortKey="player" sort={sort} toggle={toggle} align="left" />
+                    <Th label="Game" sortKey="game" sort={sort} toggle={toggle} align="left" />
+                    <Th label="Stat" sortKey="stat" sort={sort} toggle={toggle} align="left" />
+                    <Th label="Proj" sortKey="proj" sort={sort} toggle={toggle} />
+                    <Th label="Line" sortKey="line" sort={sort} toggle={toggle} />
+                    <th style={S.thL}>Lean</th>
+                    <Th label="Confidence" sortKey="conf" sort={sort} toggle={toggle} />
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.slice(0, 300).map((r, i) => (
+                  {sortedRows.slice(0, 300).map((r, i) => (
                     <tr key={i}>
                       <td style={S.tdL}><b>{r.player}</b> <span style={{ color: "var(--muted)", fontSize: 11 }}>{r.role}</span></td>
                       <td style={{ ...S.tdL, color: "var(--muted)" }}>{r.game}</td>

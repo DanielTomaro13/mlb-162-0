@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- launchd agent — scrape MLB odds from this AU machine every 3 hours and push to
+     the mlb-162-0 web repo (triggers the site deploy).
+       cp scripts/com.danieltomaro.mlb-odds.plist ~/Library/LaunchAgents/
+       launchctl load ~/Library/LaunchAgents/com.danieltomaro.mlb-odds.plist
+     Edit the paths below to match your checkout. Set MODEL_DIR if the MLB-Model
+     Python repo isn't at ~/Documents/Projects/MLB-Model. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.danieltomaro.mlb-odds</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/danieltomaro/Documents/Projects/Claude/sports-repos/mlb-162-0/scripts/odds-cron.sh</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/danieltomaro/Documents/Projects/Claude/sports-repos/mlb-162-0</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>MODEL_DIR</key>
+        <string>/Users/danieltomaro/Documents/Projects/MLB-Model</string>
+    </dict>
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Hour</key><integer>0</integer><key>Minute</key><integer>30</integer></dict>
+        <dict><key>Hour</key><integer>3</integer><key>Minute</key><integer>30</integer></dict>
+        <dict><key>Hour</key><integer>6</integer><key>Minute</key><integer>30</integer></dict>
+        <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>30</integer></dict>
+        <dict><key>Hour</key><integer>12</integer><key>Minute</key><integer>30</integer></dict>
+        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>30</integer></dict>
+        <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>30</integer></dict>
+        <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>30</integer></dict>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/Users/danieltomaro/Documents/Projects/Claude/sports-repos/mlb-162-0/scripts/odds-cron.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/danieltomaro/Documents/Projects/Claude/sports-repos/mlb-162-0/scripts/odds-cron.err.log</string>
+</dict>
+</plist>

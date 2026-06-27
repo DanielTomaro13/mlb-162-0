@@ -15,7 +15,9 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dirname, "..", "web", "public", "data");
-const FILES = ["predictions", "odds", "ratings", "meta", "pickem-lines"];
+// Model feeds only. Odds + pick'em are owned by the local AU cron (odds-cron.sh),
+// which scrapes all 5 books and pushes straight to this repo — CI must not clobber them.
+const FILES = ["predictions", "ratings", "meta"];
 const RAW = "https://raw.githubusercontent.com/DanielTomaro13/MLB-Modelling/main/docs/data";
 
 await mkdir(OUT, { recursive: true });
