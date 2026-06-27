@@ -128,6 +128,7 @@ export default function PickemPage() {
               </table>
             </div>
           </div>
+          {rows.length > 300 && <p style={{ ...S.mut, fontSize: 12, marginTop: 10 }}>Showing the 300 highest-confidence props — refine the filters to narrow down.</p>}
           <p style={{ ...S.mut, fontSize: 12, marginTop: 12 }}>Proj is the model's expected count; the lean compares the model's P(over) to the line. For research only — not betting advice.</p>
         </>
       )}

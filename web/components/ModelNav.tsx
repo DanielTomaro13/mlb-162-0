@@ -18,11 +18,12 @@ export default function ModelNav() {
   return (
     <div
       style={{
-        display: "flex", gap: 6, flexWrap: "wrap", margin: "0 0 18px",
+        display: "flex", gap: 6, flexWrap: "nowrap", margin: "0 0 18px",
         padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 12, background: "var(--panel)",
+        overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none",
       }}
     >
-      <span style={{ alignSelf: "center", color: "var(--muted)", fontSize: 12, fontWeight: 700, marginRight: 4 }}>
+      <span style={{ alignSelf: "center", color: "var(--muted)", fontSize: 12, fontWeight: 700, marginRight: 4, whiteSpace: "nowrap" }}>
         THE MODEL ·
       </span>
       {TABS.map((t) => {
@@ -32,7 +33,7 @@ export default function ModelNav() {
             key={t.href}
             href={t.href}
             style={{
-              padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 600,
+              padding: "6px 12px", borderRadius: 8, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap",
               color: on ? "#1a0606" : "var(--muted)",
               background: on ? "var(--accent)" : "var(--panel-2)",
               border: "1px solid var(--border)",

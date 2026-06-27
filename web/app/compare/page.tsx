@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Shell, FilterBar, S } from "@/components/ui";
 import { loadOdds, odds, pct, BOOK_LABEL, type Odds } from "@/lib/modeldb";
 
-const MARKETS = [["all", "All markets"], ["ml", "Moneyline"], ["rl", "Run line"], ["total", "Totals"], ["f5_total", "First 5"], ["team_total", "Team totals"]] as const;
+const MARKETS = [["all", "All markets"], ["ml", "Moneyline"], ["rl", "Run line"], ["total", "Totals"], ["f5_ml", "First 5 winner"], ["f5_total", "First 5 total"], ["fi", "1st inning"], ["team_total", "Team totals"]] as const;
 
 export default function ComparePage() {
   const [data, setData] = useState<Odds | null>(null);

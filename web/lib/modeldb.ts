@@ -8,12 +8,14 @@ const V = process.env.NEXT_PUBLIC_DATA_VERSION || "dev";
 export interface Selection { label: string; prob: number; fair: number | null }
 export interface TotalLine {
   line: number; over: number; under: number; over_fair: number | null; under_fair: number | null;
+  side?: "home" | "away";  // present on team-total lines
 }
+export interface ScoreCell { home: number; away: number; prob: number; fair: number | null }
 export interface Market {
   key: string; label: string;
   selections?: Selection[];
   lines?: TotalLine[];
-  cells?: { home: number; away: number; prob: number; fair: number | null }[];
+  cells?: ScoreCell[];
 }
 export interface PropLine { line: number; over: number; over_fair: number | null }
 export interface PlayerProp { stat: string; mu: number; lines: PropLine[] }

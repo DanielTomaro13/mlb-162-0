@@ -19,9 +19,10 @@ function rlCell(g: GameProjection, side: "home" | "away") {
 
 function GameCard({ g }: { g: GameProjection }) {
   const total = get(g, "total"), f5ml = get(g, "f5_ml"), f5t = get(g, "f5_total"), tt = get(g, "team_total");
+  const nrfi = get(g, "fi")?.selections?.find((s) => s.label.includes("NRFI"));
   const tLines = (total?.lines || []).filter((l) => [7.5, 8.5, 9.5].includes(l.line));
-  const ttHome = (tt?.lines || []).find((l: any) => l.side === "home" && l.line === 4.5);
-  const ttAway = (tt?.lines || []).find((l: any) => l.side === "away" && l.line === 4.5);
+  const ttHome = (tt?.lines || []).find((l) => l.side === "home" && l.line === 4.5);
+  const ttAway = (tt?.lines || []).find((l) => l.side === "away" && l.line === 4.5);
   const f5tMain = (f5t?.lines || []).find((l) => l.line === 4.5);
   const f5h = f5ml?.selections?.find((s) => s.label === "home");
   const f5a = f5ml?.selections?.find((s) => s.label === "away");
@@ -56,6 +57,7 @@ function GameCard({ g }: { g: GameProjection }) {
         {f5tMain && <span>F5 O{f5tMain.line} <b style={{ color: "var(--text)" }}>{pct(f5tMain.over)}</b></span>}
         {ttHome && <span>{g.homeAbbr} O4.5 <b style={{ color: "var(--text)" }}>{pct(ttHome.over)}</b></span>}
         {ttAway && <span>{g.awayAbbr} O4.5 <b style={{ color: "var(--text)" }}>{pct(ttAway.over)}</b></span>}
+        {nrfi && <span title="No run in the 1st inning">NRFI <b style={{ color: "var(--text)" }}>{pct(nrfi.prob)}</b></span>}
       </div>
     </div>
   );
