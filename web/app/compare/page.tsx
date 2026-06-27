@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Shell, FilterBar, S } from "@/components/ui";
 import { loadOdds, odds, pct, BOOK_LABEL, type Odds } from "@/lib/modeldb";
 
-const MARKETS = [["all", "All markets"], ["ml", "Moneyline"], ["rl", "Run line"], ["total", "Totals"], ["f5_ml", "First 5 winner"], ["f5_total", "First 5 total"], ["team_total", "Team totals"]] as const;
+const MARKETS = [["all", "All markets"], ["ml", "Moneyline"], ["rl", "Run line"], ["total", "Totals"], ["f5_ml", "First 5 winner"], ["f5_total", "First 5 total"], ["team_total", "Team totals"], ["prop", "Player props"]] as const;
 
 export default function ComparePage() {
   const [data, setData] = useState<Odds | null>(null);
@@ -64,7 +64,7 @@ export default function ComparePage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {m.selections.map((s) => (
+                        {m.selections.slice(0, 80).map((s) => (
                           <tr key={s.id}>
                             <td style={S.tdL}>{s.label}</td>
                             <td style={S.td}>{pct(s.model)}</td>

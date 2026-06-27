@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Shell, FilterBar, S, Th, useSort } from "@/components/ui";
 import { loadOdds, odds, pct, BOOK_LABEL, type Odds, type OddsSelection } from "@/lib/modeldb";
 
-const MARKETS = [["all", "All markets"], ["ml", "Moneyline"], ["rl", "Run line"], ["total", "Totals"], ["f5_ml", "First 5 winner"], ["f5_total", "First 5 total"], ["team_total", "Team totals"]] as const;
+const MARKETS = [["all", "All markets"], ["ml", "Moneyline"], ["rl", "Run line"], ["total", "Totals"], ["f5_ml", "First 5 winner"], ["f5_total", "First 5 total"], ["team_total", "Team totals"], ["prop", "Player props"]] as const;
 
 type Row = OddsSelection & { mkt: string; home: string; away: string; homeAbbr: string; awayAbbr: string };
 
@@ -72,7 +72,7 @@ export default function ValuePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r, i) => (
+                  {rows.slice(0, 400).map((r, i) => (
                     <tr key={i}>
                       <td style={{ ...S.tdL, color: "var(--muted)" }}>{r.away} @ {r.home}</td>
                       <td style={S.tdL}>{r.label}</td>
@@ -88,6 +88,7 @@ export default function ValuePage() {
               </table>
             </div>
           </div>
+          {rows.length > 400 && <p style={{ ...S.mut, fontSize: 12, marginTop: 10 }}>Showing the top 400 by EV — filter by market, book or team to narrow down.</p>}
           <p style={{ ...S.mut, fontSize: 12, marginTop: 12 }}>For research and entertainment only — not betting advice.</p>
         </>
       )}
