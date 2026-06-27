@@ -10,3 +10,8 @@ out/
 .wrangler/
 .playwright-mcp/
 data.sqlite
+
+# local cron logs
+scripts/*.log
+scripts/*.out.log
+scripts/*.err.log
