@@ -25,8 +25,10 @@ git pull --rebase --autostash origin main || { echo "$(ts) pull failed"; exit 1;
 
 # Run the odds engine in the model repo (loads TAB/Dabble creds from its .env).
 ( cd "$MODEL_DIR" || exit 1
+  # Pull CI's latest model (fresh profiles + fixtures) so odds price against current data.
+  git pull --rebase --autostash 2>/dev/null || true
   [ -f .env ] && { set -a; . ./.env; set +a; }
-  python3 -m src.predict   # ensure predictions are current before pricing odds against them
+  python3 -m src.predict   # refresh predictions from the current profiles
   python3 -m src.odds
 ) || { echo "$(ts) odds scrape failed"; exit 1; }
 

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Shell, FilterBar, S } from "@/components/ui";
 import { loadOdds, odds, pct, BOOK_LABEL, type Odds } from "@/lib/modeldb";
 
-const MARKETS = [["all", "All markets"], ["ml", "Moneyline"], ["rl", "Run line"], ["total", "Totals"], ["f5_ml", "First 5 winner"], ["f5_total", "First 5 total"], ["fi", "1st inning"], ["team_total", "Team totals"]] as const;
+const MARKETS = [["all", "All markets"], ["ml", "Moneyline"], ["rl", "Run line"], ["total", "Totals"], ["f5_ml", "First 5 winner"], ["f5_total", "First 5 total"], ["team_total", "Team totals"]] as const;
 
 export default function ComparePage() {
   const [data, setData] = useState<Odds | null>(null);
@@ -15,11 +15,11 @@ export default function ComparePage() {
   useEffect(() => { loadOdds().then(setData); }, []);
 
   const books = data?.books || [];
-  const gameList = useMemo(() => (data?.games || []).map((g) => `${g.away} @ ${g.home}`), [data]);
+  const gameList = useMemo(() => Array.from(new Set((data?.games || []).map((g) => `${g.date} · ${g.away} @ ${g.home}`))), [data]);
 
   const view = useMemo(() => {
     return (data?.games || [])
-      .filter((g) => game === "all" || `${g.away} @ ${g.home}` === game)
+      .filter((g) => game === "all" || `${g.date} · ${g.away} @ ${g.home}` === game)
       .map((g) => ({
         ...g,
         markets: g.markets

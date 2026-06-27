@@ -38,14 +38,14 @@ function GameBook({ g }: { g: GameProjection }) {
         </div>
         <div>
           {f5ml?.selections && (<><div style={sub}>First 5 innings</div>
-            <MiniTable head={["F5", "Prob", "Fair", ""]} rows={[
-              ...f5ml.selections.map((s) => [s.label === "tie" ? "Tie" : s.label === "home" ? g.homeAbbr : g.awayAbbr, pct(s.prob), odds(s.fair), ""]),
-              ...(f5t?.lines || []).map((l) => [`O/U ${l.line}`, pct(l.over), odds(l.over_fair), "over"]),
+            <MiniTable head={["F5", "Prob", "Fair"]} rows={[
+              ...f5ml.selections.map((s) => [s.label === "tie" ? "Tie" : s.label === "home" ? g.homeAbbr : g.awayAbbr, pct(s.prob), odds(s.fair)]),
+              ...(f5t?.lines || []).map((l) => [`Over ${l.line}`, pct(l.over), odds(l.over_fair)]),
             ]} /></>)}
           {teamTotal?.lines && (<><div style={sub}>Team totals</div>
             <MiniTable head={["Side", "Line", "Over", "Fair"]} rows={teamTotal.lines.map((l) => [l.side === "home" ? g.homeAbbr : g.awayAbbr, l.line, pct(l.over), odds(l.over_fair)])} /></>)}
           {cs?.cells && (<><div style={sub}>Likeliest final scores</div>
-            <MiniTable head={["Score", "Prob", "Fair", ""]} rows={cs.cells.slice(0, 5).map((c) => [`${g.homeAbbr} ${c.home}–${c.away} ${g.awayAbbr}`, pct(c.prob), odds(c.fair), ""])} /></>)}
+            <MiniTable head={["Score", "Prob", "Fair"]} rows={cs.cells.slice(0, 5).map((c) => [`${g.homeAbbr} ${c.home}–${c.away} ${g.awayAbbr}`, pct(c.prob), odds(c.fair)])} /></>)}
         </div>
       </div>
 

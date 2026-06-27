@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Shell, FilterBar, S, Th, useSort } from "@/components/ui";
 import { loadOdds, odds, pct, BOOK_LABEL, type Odds, type OddsSelection } from "@/lib/modeldb";
 
-const MARKETS = [["all", "All markets"], ["ml", "Moneyline"], ["rl", "Run line"], ["total", "Totals"], ["f5_ml", "First 5 winner"], ["f5_total", "First 5 total"], ["fi", "1st inning"], ["team_total", "Team totals"]] as const;
+const MARKETS = [["all", "All markets"], ["ml", "Moneyline"], ["rl", "Run line"], ["total", "Totals"], ["f5_ml", "First 5 winner"], ["f5_total", "First 5 total"], ["team_total", "Team totals"]] as const;
 
 type Row = OddsSelection & { mkt: string; home: string; away: string; homeAbbr: string; awayAbbr: string };
 
@@ -30,7 +30,7 @@ export default function ValuePage() {
       .filter((r) => !q || `${r.homeAbbr} ${r.awayAbbr} ${r.label}`.toLowerCase().includes(q.toLowerCase()));
   }, [data, book, market, posOnly, q]);
   const rows = sorted(filtered, {
-    game: (r) => r.home, selection: (r) => r.label, model: (r) => r.model,
+    game: (r) => `${r.away} @ ${r.home}`, selection: (r) => r.label, model: (r) => r.model,
     fair: (r) => r.fair ?? 0, best: (r) => r.best?.price ?? 0, book: (r) => r.best?.book ?? "", ev: (r) => r.ev,
   });
 
