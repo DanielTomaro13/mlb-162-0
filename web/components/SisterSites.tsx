@@ -9,6 +9,7 @@ const SITES = [
   { key: "nba", label: "NBA 82-0", href: "https://nba82-0.com" },
   { key: "f1", label: "F1 Slam", href: "https://f1slam.com" },
   { key: "football", label: "Football Invincibles", href: "https://footballinvincibles.com" },
+  { key: "tennis", label: "Tennis Slam", href: "https://grandtennisslam.com" },
 ];
 
 type SiteKey = "afl" | "nrl" | "mlb" | "nba" | "f1" | "football";
