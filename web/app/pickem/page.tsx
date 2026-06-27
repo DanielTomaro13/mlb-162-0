@@ -38,7 +38,7 @@ export default function PickemPage() {
     const seen = new Set<string>();
     const out: Row[] = [];
     for (const g of [...pred.games].sort((a, b) => a.date.localeCompare(b.date))) {
-      const label = `${g.awayAbbr} @ ${g.homeAbbr}`;
+      const label = `${g.away} @ ${g.home}`;
       for (const side of [g.props.home, g.props.away]) {
         for (const pl of side) {
           for (const p of pl.props) {
@@ -79,7 +79,7 @@ export default function PickemPage() {
     for (const g of pred.games) for (const side of [g.props.home, g.props.away]) for (const pl of side) for (const p of pl.props) s.add(p.stat);
     return Array.from(s);
   }, [pred]);
-  const games = useMemo(() => pred ? Array.from(new Set(pred.games.map((g) => `${g.awayAbbr} @ ${g.homeAbbr}`))) : [], [pred]);
+  const games = useMemo(() => pred ? Array.from(new Set(pred.games.map((g) => `${g.away} @ ${g.home}`))) : [], [pred]);
 
   return (
     <Shell

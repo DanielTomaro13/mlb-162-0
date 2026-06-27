@@ -31,7 +31,7 @@ function GameCard({ g }: { g: GameProjection }) {
   return (
     <div style={S.card}>
       <div style={S.cardHead}>
-        <strong>{g.awayAbbr} @ {g.homeAbbr}</strong>
+        <strong>{g.away} @ {g.home}</strong>
         <span style={S.mut}>
           {g.date} · proj total <b style={{ color: "var(--text)" }}>{g.total_mean}</b>
           {mainTotal && <> · O/U {mainTotal.line} <b style={{ color: "var(--accent-2)" }}>O {pct(mainTotal.over)}</b> / U {pct(mainTotal.under)}</>}

@@ -116,7 +116,7 @@ export default function PredictionsPage() {
             return (
               <div key={key} style={S.card}>
                 <div style={{ ...S.cardHead, cursor: "pointer" }} onClick={() => toggle(key)}>
-                  <strong>{g.awayAbbr} @ {g.homeAbbr} <span style={{ color: "var(--muted)", fontWeight: 400, fontSize: 12.5 }}>· {g.date}</span></strong>
+                  <strong>{g.away} @ {g.home} <span style={{ color: "var(--muted)", fontWeight: 400, fontSize: 12.5 }}>· {g.date}</span></strong>
                   <span style={{ color: "var(--muted)", fontSize: 12.5 }}>
                     {g.awayAbbr} {pct(g.win_away)} · {g.homeAbbr} {pct(g.win_home)} · O/U {g.total_mean} {isOpen ? "▲" : "▼"}
                   </span>

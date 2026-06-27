@@ -30,7 +30,7 @@ export default function ValuePage() {
       .filter((r) => !q || `${r.homeAbbr} ${r.awayAbbr} ${r.label}`.toLowerCase().includes(q.toLowerCase()));
   }, [data, book, market, posOnly, q]);
   const rows = sorted(filtered, {
-    game: (r) => r.homeAbbr, selection: (r) => r.label, model: (r) => r.model,
+    game: (r) => r.home, selection: (r) => r.label, model: (r) => r.model,
     fair: (r) => r.fair ?? 0, best: (r) => r.best?.price ?? 0, book: (r) => r.best?.book ?? "", ev: (r) => r.ev,
   });
 
@@ -74,7 +74,7 @@ export default function ValuePage() {
                 <tbody>
                   {rows.map((r, i) => (
                     <tr key={i}>
-                      <td style={{ ...S.tdL, color: "var(--muted)" }}>{r.awayAbbr} @ {r.homeAbbr}</td>
+                      <td style={{ ...S.tdL, color: "var(--muted)" }}>{r.away} @ {r.home}</td>
                       <td style={S.tdL}>{r.label}</td>
                       <td style={S.td}>{pct(r.model)}</td>
                       <td style={S.td}>{odds(r.fair)}</td>

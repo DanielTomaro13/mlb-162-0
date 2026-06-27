@@ -15,11 +15,11 @@ export default function ComparePage() {
   useEffect(() => { loadOdds().then(setData); }, []);
 
   const books = data?.books || [];
-  const gameList = useMemo(() => (data?.games || []).map((g) => `${g.awayAbbr} @ ${g.homeAbbr}`), [data]);
+  const gameList = useMemo(() => (data?.games || []).map((g) => `${g.away} @ ${g.home}`), [data]);
 
   const view = useMemo(() => {
     return (data?.games || [])
-      .filter((g) => game === "all" || `${g.awayAbbr} @ ${g.homeAbbr}` === game)
+      .filter((g) => game === "all" || `${g.away} @ ${g.home}` === game)
       .map((g) => ({
         ...g,
         markets: g.markets
@@ -48,7 +48,7 @@ export default function ComparePage() {
 
           {view.map((g) => (
             <div key={g.home + g.away + g.date} style={S.card}>
-              <div style={S.cardHead}><strong>{g.awayAbbr} @ {g.homeAbbr}</strong><span style={S.mut}>{g.date}</span></div>
+              <div style={S.cardHead}><strong>{g.away} @ {g.home}</strong><span style={S.mut}>{g.date}</span></div>
               {g.markets.map((m) => (
                 <div key={m.key}>
                   <div style={{ padding: "8px 16px 2px", color: "var(--muted)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em" }}>{m.label}</div>
