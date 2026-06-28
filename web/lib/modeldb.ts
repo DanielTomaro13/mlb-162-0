@@ -42,7 +42,7 @@ export interface OddsGame {
 }
 export interface Odds { generated: string; books: string[]; count: number; games: OddsGame[] }
 
-export interface PickemLine { event: string; player: string; stat: string; line: number }
+export interface PickemLine { event: string; player: string; stat: string; line: number; over: number | null; under: number | null }
 export interface Pickem { generated: string; lines: PickemLine[] }
 
 export const BOOK_LABEL: Record<string, string> = {
