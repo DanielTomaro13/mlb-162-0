@@ -4,6 +4,7 @@ import LiveLeaders from "@/components/LiveLeaders";
 import LiveStandingsPreview from "@/components/LiveStandingsPreview";
 import HomeLeaderboard from "@/components/HomeLeaderboard";
 import DailyLeaderboard from "@/components/DailyLeaderboard";
+import HomeModel from "@/components/HomeModel";
 import { GAMES } from "@/lib/gamelist";
 
 export default function Home() {
@@ -48,6 +49,9 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* the model — fair prices & value */}
+      <HomeModel />
 
       {/* daily challenge + leaderboards */}
       <section style={{ display: "grid", gap: "1rem", gridTemplateColumns: "minmax(0,1.4fr) minmax(0,1fr)" }} className="home-split">
