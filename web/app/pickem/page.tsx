@@ -2,110 +2,88 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Shell, FilterBar, S, Th, useSort } from "@/components/ui";
-import { loadPredictions, loadPickem, poissonOver, pct, type Predictions, type Pickem } from "@/lib/modeldb";
-
-const norm = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^a-z\s]/g, "").replace(/\s+/g, " ").trim();
+import { loadOdds, odds, pct, type Odds, type OddsSelection } from "@/lib/modeldb";
 
 interface Row {
-  game: string; date: string; player: string; role: string; stat: string;
-  mu: number; line: number; posted: boolean; pOver: number; lean: "over" | "under"; conf: number;
+  player: string; game: string; stat: string; line: number;
+  lean: "over" | "under"; conf: number; price: number | null; edge: number | null;
 }
 
 export default function PickemPage() {
-  const [pred, setPred] = useState<Predictions | null>(null);
-  const [pk, setPk] = useState<Pickem | null>(null);
+  const [data, setData] = useState<Odds | null>(null);
   const [stat, setStat] = useState("all");
   const [game, setGame] = useState("all");
+  const [lean, setLean] = useState("all");
   const [q, setQ] = useState("");
-  const [showAll, setShowAll] = useState(false);
-  const { sort, toggle, sorted } = useSort("conf");
+  const { sort, toggle, sorted } = useSort("edge");
 
-  useEffect(() => {
-    loadPredictions().then(setPred);
-    loadPickem().then(setPk);
-  }, []);
+  useEffect(() => { loadOdds().then(setData); }, []);
 
-  const haveDabble = (pk?.lines?.length || 0) > 0;
-  const posted = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const l of pk?.lines || []) m.set(`${norm(l.player)}|${l.stat}`, l.line);
-    return m;
-  }, [pk]);
-
-  const rows = useMemo<Row[]>(() => {
-    if (!pred) return [];
-    // One row per player+stat (a matchup recurs across dates — keep the next game only).
-    const seen = new Set<string>();
+  // Build one row per Dabble player-prop line, with the model's recommended side.
+  const all = useMemo<Row[]>(() => {
     const out: Row[] = [];
-    for (const g of [...pred.games].sort((a, b) => a.date.localeCompare(b.date))) {
+    for (const g of data?.games || []) {
+      const prop = g.markets.find((m) => m.key === "prop");
+      if (!prop) continue;
       const label = `${g.away} @ ${g.home}`;
-      for (const side of [g.props.home, g.props.away]) {
-        for (const pl of side) {
-          for (const p of pl.props) {
-            const key = `${norm(pl.player)}|${p.stat}`;
-            if (seen.has(key)) continue;
-            seen.add(key);
-            const pLine = posted.get(key);
-            const hasPosted = pLine != null;
-            const line = hasPosted ? pLine! : Math.floor(p.mu) + 0.5;
-            const pOver = poissonOver(p.mu, line);
-            out.push({
-              game: label, date: g.date, player: pl.player, role: pl.role, stat: p.stat,
-              mu: p.mu, line, posted: hasPosted, pOver,
-              lean: pOver >= 0.5 ? "over" : "under", conf: Math.abs(pOver - 0.5) * 2,
-            });
-          }
-        }
+      const groups = new Map<string, { player: string; stat: string; line: number; over?: OddsSelection; under?: OddsSelection }>();
+      for (const sel of prop.selections) {
+        const p = sel.id.split("|"); // prop | normplayer | stat | over/under | line
+        if (p[0] !== "prop") continue;
+        const [, np, st, ou, lineStr] = p;
+        const key = `${np}|${st}|${lineStr}`;
+        let grp = groups.get(key);
+        if (!grp) { grp = { player: sel.label.split(/ (?:Over|Under) /)[0], stat: st, line: parseFloat(lineStr) }; groups.set(key, grp); }
+        (grp as Record<string, unknown>)[ou] = sel;
+      }
+      for (const grp of groups.values()) {
+        const pOver = grp.over ? grp.over.model : grp.under ? 1 - grp.under.model : null;
+        if (pOver == null) continue;
+        const ln: "over" | "under" = pOver >= 0.5 ? "over" : "under";
+        const leanSel = grp[ln];
+        const price = leanSel?.books?.dabble ?? null;       // every prop line is a real Dabble line
+        const conf = Math.max(pOver, 1 - pOver);
+        out.push({ player: grp.player, game: label, stat: grp.stat, line: grp.line, lean: ln, conf, price, edge: price ? conf - 1 / price : null });
       }
     }
-    return out
-      .filter((r) => (haveDabble && !showAll ? r.posted : true))
-      // Keep Dabble-posted lines as-is. For the model-only fallback, only show lines a
-      // book would actually post — i.e. genuinely two-sided (the over has a real shot),
-      // which also strips the trivial "0.09 RBIs → under 0.5" noise.
-      .filter((r) => r.posted || (r.pOver >= 0.3 && r.pOver <= 0.82))
+    return out;
+  }, [data]);
+
+  const rows = useMemo(() => {
+    const filtered = all
       .filter((r) => stat === "all" || r.stat === stat)
       .filter((r) => game === "all" || r.game === game)
+      .filter((r) => lean === "all" || r.lean === lean)
       .filter((r) => !q || r.player.toLowerCase().includes(q.toLowerCase()));
-  }, [pred, posted, haveDabble, showAll, stat, game, q]);
-  const sortedRows = sorted(rows, {
-    player: (r) => r.player, game: (r) => r.game, stat: (r) => r.stat,
-    proj: (r) => r.mu, line: (r) => r.line, conf: (r) => r.conf,
-  });
+    return sorted(filtered, {
+      player: (r) => r.player, game: (r) => r.game, stat: (r) => r.stat, line: (r) => r.line,
+      lean: (r) => r.lean, conf: (r) => r.conf, price: (r) => r.price ?? 0, edge: (r) => r.edge ?? -1,
+    });
+  }, [all, stat, game, lean, q, sort]);
 
-  const stats = useMemo<string[]>(() => {
-    if (!pred) return [];
-    const s = new Set<string>();
-    for (const g of pred.games) for (const side of [g.props.home, g.props.away]) for (const pl of side) for (const p of pl.props) s.add(p.stat);
-    return Array.from(s);
-  }, [pred]);
-  const games = useMemo(() => pred ? Array.from(new Set(pred.games.map((g) => `${g.away} @ ${g.home}`))) : [], [pred]);
+  const stats = useMemo(() => Array.from(new Set(all.map((r) => r.stat))).sort(), [all]);
+  const games = useMemo(() => Array.from(new Set(all.map((r) => r.game))).sort(), [all]);
 
   return (
     <Shell
       title="The Model · Pick'em"
-      blurb={haveDabble
-        ? "Dabble Pick'em player props with the model's over/under lean and confidence. Showing the lines Dabble has posted."
-        : "Player-prop projections for Dabble Pick'em — the model's over/under lean and confidence. Dabble's posted lines load from a local run; until then these are the model's own projected lines."}
+      blurb={<>Every player line Dabble is posting, with the model&apos;s recommended side, confidence and edge. {data?.generated ? `Updated ${data.generated}.` : ""}</>}
     >
-      {!pred && <p style={S.mut}>Loading…</p>}
-      {pred && (
+      {!data && <p style={S.mut}>Loading…</p>}
+      {data && all.length === 0 && <p style={S.mut}>No Dabble player props loaded yet — they refresh from the local odds run.</p>}
+      {data && all.length > 0 && (
         <>
-          <FilterBar count={`${rows.length} props`}>
+          <FilterBar count={`${rows.length} lines`}>
             <select style={S.field} value={stat} onChange={(e) => setStat(e.target.value)}>
-              <option value="all">All stats</option>
-              {stats.map((s) => <option key={s} value={s}>{s}</option>)}
+              <option value="all">All stats</option>{stats.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
             <select style={S.field} value={game} onChange={(e) => setGame(e.target.value)}>
-              <option value="all">All games</option>
-              {games.map((g) => <option key={g} value={g}>{g}</option>)}
+              <option value="all">All games</option>{games.map((g) => <option key={g} value={g}>{g}</option>)}
             </select>
-            <input style={{ ...S.field, minWidth: 160 }} type="search" placeholder="Search player…" value={q} onChange={(e) => setQ(e.target.value)} />
-            {haveDabble && (
-              <label style={{ display: "inline-flex", gap: 6, alignItems: "center", color: "var(--muted)", fontSize: 13 }}>
-                <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> include non-Dabble players
-              </label>
-            )}
+            <select style={S.field} value={lean} onChange={(e) => setLean(e.target.value)}>
+              <option value="all">Over &amp; Under</option><option value="over">Over only</option><option value="under">Under only</option>
+            </select>
+            <input style={{ ...S.field, minWidth: 150 }} type="search" placeholder="Search player…" value={q} onChange={(e) => setQ(e.target.value)} />
           </FilterBar>
 
           <div style={{ ...S.card, margin: 0 }}>
@@ -116,33 +94,36 @@ export default function PickemPage() {
                     <Th label="Player" sortKey="player" sort={sort} toggle={toggle} align="left" />
                     <Th label="Game" sortKey="game" sort={sort} toggle={toggle} align="left" />
                     <Th label="Stat" sortKey="stat" sort={sort} toggle={toggle} align="left" />
-                    <Th label="Proj" sortKey="proj" sort={sort} toggle={toggle} />
                     <Th label="Line" sortKey="line" sort={sort} toggle={toggle} />
-                    <th style={S.thL}>Lean</th>
+                    <Th label="Pick" sortKey="lean" sort={sort} toggle={toggle} align="left" />
                     <Th label="Confidence" sortKey="conf" sort={sort} toggle={toggle} />
+                    <Th label="Dabble" sortKey="price" sort={sort} toggle={toggle} />
+                    <Th label="Edge" sortKey="edge" sort={sort} toggle={toggle} />
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedRows.slice(0, 300).map((r, i) => (
+                  {rows.slice(0, 400).map((r, i) => (
                     <tr key={i}>
-                      <td style={S.tdL}><b>{r.player}</b> <span style={{ color: "var(--muted)", fontSize: 11 }}>{r.role}</span></td>
+                      <td style={S.tdL}><b>{r.player}</b></td>
                       <td style={{ ...S.tdL, color: "var(--muted)" }}>{r.game}</td>
                       <td style={S.tdL}>{r.stat}</td>
-                      <td style={S.td}>{r.mu.toFixed(2)}</td>
-                      <td style={S.td}>{r.line}{r.posted ? <span style={{ marginLeft: 5, fontSize: 10, color: "var(--accent)", fontWeight: 700 }}>DABBLE</span> : ""}</td>
-                      <td style={{ ...S.tdL, fontWeight: 700, color: r.lean === "over" ? "var(--accent-2)" : "var(--gold)" }}>
-                        {r.lean === "over" ? "Over" : "Under"} {pct(r.lean === "over" ? r.pOver : 1 - r.pOver)}
-                      </td>
+                      <td style={S.td}>{r.line}</td>
+                      <td style={{ ...S.tdL, fontWeight: 700, color: r.lean === "over" ? "var(--accent-2)" : "var(--gold)" }}>{r.lean === "over" ? "Over" : "Under"}</td>
                       <td style={S.td}>{pct(r.conf)}</td>
+                      <td style={{ ...S.td, color: "var(--gold)" }}>{odds(r.price)}</td>
+                      <td style={{ ...S.td, color: (r.edge ?? 0) > 0 ? "var(--accent-2)" : "var(--muted)", fontWeight: 600 }}>
+                        {r.edge == null ? "—" : (r.edge > 0 ? "+" : "") + (r.edge * 100).toFixed(1) + "%"}
+                      </td>
                     </tr>
                   ))}
-                  {rows.length === 0 && <tr><td colSpan={7} style={{ padding: 20, textAlign: "center", color: "var(--muted)" }}>No props match these filters.</td></tr>}
                 </tbody>
               </table>
             </div>
           </div>
-          {rows.length > 300 && <p style={{ ...S.mut, fontSize: 12, marginTop: 10 }}>Showing the 300 highest-confidence props — refine the filters to narrow down.</p>}
-          <p style={{ ...S.mut, fontSize: 12, marginTop: 12 }}>Proj is the model's expected count; the lean compares the model's P(over) to the line. For research only — not betting advice.</p>
+          {rows.length > 400 && <p style={{ ...S.mut, fontSize: 12, marginTop: 10 }}>Showing the top 400 — filter to narrow down.</p>}
+          <p style={{ ...S.mut, fontSize: 12, marginTop: 12 }}>
+            Confidence is the model&apos;s probability for the picked side; edge compares it to Dabble&apos;s price. For research only — not betting advice.
+          </p>
         </>
       )}
     </Shell>
