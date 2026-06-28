@@ -39,11 +39,16 @@ export default function PickemPage() {
       for (const grp of groups.values()) {
         const pOver = grp.over ? grp.over.model : grp.under ? 1 - grp.under.model : null;
         if (pOver == null) continue;
-        const ln: "over" | "under" = pOver >= 0.5 ? "over" : "under";
-        const leanSel = grp[ln];
-        const price = leanSel?.books?.dabble ?? null;       // every prop line is a real Dabble line
-        const conf = Math.max(pOver, 1 - pOver);
-        out.push({ player: grp.player, game: label, stat: grp.stat, line: grp.line, lean: ln, conf, price, edge: price ? conf - 1 / price : null });
+        // Only consider sides Dabble actually prices — never show a side that isn't offered
+        // (e.g. stolen bases is an over-only market).
+        const cands: { lean: "over" | "under"; conf: number; price: number }[] = [];
+        if (grp.over?.books?.dabble != null) cands.push({ lean: "over", conf: pOver, price: grp.over.books.dabble });
+        if (grp.under?.books?.dabble != null) cands.push({ lean: "under", conf: 1 - pOver, price: grp.under.books.dabble });
+        if (!cands.length) continue;
+        // Show the side the model favours among those Dabble offers.
+        cands.sort((a, b) => b.conf - a.conf);
+        const pick = cands[0];
+        out.push({ player: grp.player, game: label, stat: grp.stat, line: grp.line, lean: pick.lean, conf: pick.conf, price: pick.price, edge: pick.conf - 1 / pick.price });
       }
     }
     return out;
