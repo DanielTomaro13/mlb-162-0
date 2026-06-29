@@ -14,9 +14,10 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # The MLB-Modelling Python repo (override with MODEL_DIR if it lives elsewhere).
 MODEL_DIR="${MODEL_DIR:-$HOME/Documents/Projects/MLB-Model}"
-# Shared bookmaker creds (TAB_CLIENT_ID/SECRET, DABBLE_* …) — the same .env the other
-# sports use. Override with CREDS_ENV. MLB-Model/.env (if present) is also sourced.
-CREDS_ENV="${CREDS_ENV:-$HOME/Documents/Projects/sportsdata-agents/.env}"
+# Shared bookmaker creds (TAB_CLIENT_ID/SECRET/ACCESS_TOKEN, DABBLE_* …) — the same
+# secrets.env the AFL/NRL/Tennis odds crons source. Override with CREDS_ENV.
+# MLB-Model/.env (if present) is also sourced for any MLB-specific overrides.
+CREDS_ENV="${CREDS_ENV:-$HOME/sports-bots/secrets.env}"
 cd "$REPO" || exit 1
 LOG="$REPO/scripts/odds-cron.log"
 ts() { date "+%Y-%m-%d %H:%M:%S"; }
