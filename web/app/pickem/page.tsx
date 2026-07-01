@@ -45,8 +45,14 @@ export default function PickemPage() {
       if (mu != null) {
         const pOver = poissonOver(mu, l.line);
         pick = pOver >= 0.5 ? "over" : "under";
-        conf = Math.max(pOver, 1 - pOver);
-        fair = conf > 0 ? +(1 / conf).toFixed(2) : null;
+        // Most of Dabble's board is More-only — a pick on a side that isn't
+        // offered is not a bet, so drop it (row hides under "model picks only").
+        if (l.sides && !l.sides.includes(pick)) {
+          pick = null;
+        } else {
+          conf = Math.max(pOver, 1 - pOver);
+          fair = conf > 0 ? +(1 / conf).toFixed(2) : null;
+        }
       }
       return { player: l.player, event: l.event, stat: l.stat, line: l.line, proj: mu ?? null, pick, conf, fair, main: false };
     });
