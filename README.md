@@ -1,5 +1,7 @@
 # ⚾ MLB 162-0
 
+> **Status, September 2026:** GitHub Actions are currently paused on this repo, so automated data refreshes and deploys are not running. The data and any live site reflect the last build.
+
 > MLB stats, standings & addictive baseball mini-games. Build an all-time roster and chase a perfect 162-0 season.
 > Live at **[mlb162-0.com](https://mlb162-0.com)**.
 
