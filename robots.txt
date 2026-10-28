@@ -1,0 +1,5 @@
+User-Agent: *
+Allow: /
+
+Host: https://mlb162-0.com
+Sitemap: https://mlb162-0.com/sitemap.xml
