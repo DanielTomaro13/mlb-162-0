@@ -185,52 +185,110 @@ a, button { touch-action: manipulation; -webkit-tap-highlight-color: transparent
   object-fit: cover;
 }
 
-/* Brief MarketMover cross-promo. Non-blocking; sits above the sticky header. */
+/* MarketMover cross-promo. Desktop card is min(560px, 92vw); iOS is nearly full width. */
 .mm-pop {
   position: fixed;
   z-index: 80;
   right: max(1rem, env(safe-area-inset-right));
   bottom: max(1rem, env(safe-area-inset-bottom));
-  width: min(22.5rem, calc(100vw - 2rem));
+  width: min(560px, 92vw);
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 0.75rem;
+  gap: 1.15rem;
   align-items: start;
-  padding: 0.9rem;
+  padding: 1.35rem 1.4rem 1.4rem;
   background: linear-gradient(180deg, var(--panel), var(--bg-soft));
   border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  border-radius: 18px;
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.5);
 }
 .mm-pop-mark {
-  width: 44px;
-  height: 44px;
+  width: 88px;
+  height: 88px;
   max-width: none;
-  border-radius: 10px;
+  border-radius: 16px;
   object-fit: cover;
 }
+.mm-pop-body { min-width: 0; }
+.mm-pop-title {
+  margin: 0 2.25rem 0.4rem 0;
+  font-size: 1.85rem;
+  line-height: 1.05;
+  font-weight: 700;
+}
 .mm-pop-copy {
-  margin: 0 1.5rem 0.75rem 0;
-  font-size: 0.92rem;
-  line-height: 1.4;
+  margin: 0 0.25rem 1.05rem 0;
+  font-size: 1.08rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.mm-pop-cta {
+  min-height: 52px;
+  padding: 0.75rem 1.4rem;
+  font-size: 1.08rem;
+  border-radius: 12px;
 }
 .mm-pop-x {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 32px;
-  height: 32px;
+  top: 8px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   background: transparent;
   color: var(--muted);
-  font-size: 1.15rem;
+  font-size: 1.55rem;
   line-height: 1;
   cursor: pointer;
+  touch-action: manipulation;
 }
 @media (hover: hover) { .mm-pop-x:hover { color: var(--text); background: var(--panel-2); } }
+
+/* iOS (Safari touch): nearly full width inside the safe areas, larger type, ~48px taps. */
+@supports (-webkit-touch-callout: none) {
+  @media (pointer: coarse) {
+    .mm-pop {
+      left: max(0.4rem, env(safe-area-inset-left));
+      right: max(0.4rem, env(safe-area-inset-right));
+      bottom: max(0.5rem, env(safe-area-inset-bottom));
+      width: auto;
+      max-width: none;
+      gap: 0.95rem;
+      padding: 1.15rem 1rem 1.2rem;
+    }
+    .mm-pop-mark {
+      width: 72px;
+      height: 72px;
+      border-radius: 14px;
+    }
+    .mm-pop-title {
+      margin-right: 2.75rem;
+      font-size: 1.7rem;
+    }
+    .mm-pop-copy {
+      font-size: 1.15rem;
+      line-height: 1.4;
+    }
+    .mm-pop-cta {
+      width: 100%;
+      min-height: 48px;
+      padding: 0.7rem 1.1rem;
+      font-size: 1.12rem;
+    }
+    .mm-pop-x {
+      top: 6px;
+      right: 6px;
+      width: 48px;
+      height: 48px;
+      min-width: 48px;
+      min-height: 48px;
+      font-size: 1.7rem;
+    }
+  }
+}
 
 /* ---- site header ---- */
 .site-header {

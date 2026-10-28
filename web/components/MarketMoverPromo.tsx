@@ -74,14 +74,15 @@ export default function MarketMoverPromo() {
         className="mm-pop-mark"
         src={`${BASE}/marketmover-mark.png`}
         alt=""
-        width={44}
-        height={44}
+        width={88}
+        height={88}
       />
-      <div>
-        <p id="mm-pop-title" className="mm-pop-copy">
-          MarketMover — live prices and model markets in one place. More markets coming.
+      <div className="mm-pop-body">
+        <h2 id="mm-pop-title" className="mm-pop-title">MarketMover</h2>
+        <p className="mm-pop-copy">
+          Live prices and model markets in one place. More markets coming.
         </p>
-        <a className="btn btn-primary" href={HREF} style={{ minHeight: 40, padding: "0.45rem 0.85rem" }}>
+        <a className="btn btn-primary mm-pop-cta" href={HREF}>
           Open MarketMover
         </a>
       </div>
