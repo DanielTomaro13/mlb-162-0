@@ -43,8 +43,9 @@ export default function PrivacyPage() {
         <ul style={{ paddingLeft: "1.1rem", display: "grid", gap: 6 }}>
           <li><strong>On-device storage.</strong> Game progress, streaks, high scores and your chosen
             display name are stored in your browser&apos;s <em>localStorage</em> on your own device.
-            This never leaves your browser unless you choose to submit a score to a leaderboard, and
-            you can clear it any time by clearing your browser data.</li>
+            Dismissing the MarketMover notice also stores a timestamp there so it stays hidden for
+            14 days. This never leaves your browser unless you choose to submit a score to a
+            leaderboard, and you can clear it any time by clearing your browser data.</li>
           <li><strong>Leaderboards (optional).</strong> If you submit a score, only the display name
             you typed and the score are sent to our leaderboard service. Don&apos;t enter a real name
             if you&apos;d prefer to stay anonymous — &quot;Anonymous&quot; is the default.</li>
